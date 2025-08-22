@@ -1,0 +1,120 @@
+# AudIn User Flow & Page Structure
+
+## Page Architecture
+
+### 1. Landing Page (`/`)
+**Purpose**: First impression, API key collection, and project introduction
+**Key Elements**:
+- Hero section explaining "Your Personal Inbox Radio"
+- API key input field (OpenAI)
+- "Get Started" button
+- Brief feature overview (2-minute digest, privacy-first, etc.)
+- Demo mode toggle (for testing without API key)
+
+**User Actions**:
+- Enter OpenAI API key
+- Click "Get Started" → Navigate to Dashboard
+- Toggle demo mode → Use mock data
+
+---
+
+### 2. Dashboard (`/dashboard`)
+**Purpose**: Main application interface where the magic happens
+**Key Elements**:
+- Header with app name and settings button
+- "Generate Today's Digest" primary action button
+- Email preview section (categorized: Urgent, New, Keep in Mind)
+- Audio player component (initially hidden)
+- Text digest display (parallel to audio)
+- Download/share options
+
+**User Actions**:
+- Click "Generate Today's Digest" → Process emails → Generate audio
+- Play/pause audio digest
+- Adjust playback speed (1x, 1.5x, 2x)
+- Download MP3 file
+- Copy text summary
+- Navigate to settings
+
+**States**:
+- Initial: Show "Generate" button
+- Loading: Show spinner and progress text
+- Ready: Show audio player and text digest
+- Error: Show error message with retry option
+
+---
+
+### 3. Settings Page (`/settings`) - Optional for MVP
+**Purpose**: Configure preferences and manage data
+**Key Elements**:
+- API key management (change/clear)
+- Audio preferences (voice selection if multiple options)
+- Email filters (number of emails, date range)
+- Privacy controls (clear all data)
+- Demo mode toggle
+
+**User Actions**:
+- Update API key
+- Clear stored data
+- Adjust email processing preferences
+- Return to dashboard
+
+---
+
+## Complete User Flow
+
+### First-Time User Journey
+1. **Land on Homepage** → See value proposition
+2. **Enter API Key** → Store in sessionStorage
+3. **Click "Get Started"** → Navigate to dashboard
+4. **Click "Generate Today's Digest"** → 
+   - Process mock emails (MVP phase)
+   - Show loading spinner with progress text
+   - Generate audio via OpenAI TTS
+5. **Audio Ready** → 
+   - Play digest automatically or wait for user
+   - Show synchronized text version
+   - Provide download and sharing options
+
+### Returning User Journey
+1. **Land on Homepage** → API key already stored, auto-redirect to dashboard
+2. **Dashboard** → Previous digest available or generate new one
+3. **Generate New Digest** → Same flow as above
+
+### Demo Mode Journey (For Judges/Testing)
+1. **Toggle Demo Mode** → Use pre-created mock data
+2. **Generate Digest** → Faster processing, no API calls needed
+3. **Experience Full Feature Set** → Audio + text output
+
+## Key User Experience Decisions
+
+### Navigation
+- **Minimal Navigation**: Only 2-3 pages maximum
+- **Primary Action**: "Generate Digest" is the hero action
+- **Settings**: Accessible but not prominent (gear icon in header)
+
+### Data Flow
+1. **Input**: API key + mock emails (MVP) / real emails (later)
+2. **Processing**: Summarization → Categorization → Audio generation
+3. **Output**: Playable audio + readable text + downloadable MP3
+
+### Error Handling
+- **API Key Issues**: Clear error messages with solution steps
+- **Audio Generation Failures**: Fallback to text-only mode
+- **Network Issues**: Retry mechanisms with user feedback
+
+### Mobile Experience
+- **Responsive Design**: All pages work on mobile
+- **Audio Player**: Touch-friendly controls
+- **Text Display**: Readable typography and spacing
+
+## Page Transitions
+- **Homepage → Dashboard**: Smooth transition after API key validation
+- **Dashboard States**: In-place updates (loading → content) without page reloads
+- **Settings**: Modal overlay OR separate page (TBD during development)
+
+## Technical Implementation Notes
+- **Single Page App Feel**: Minimal full page reloads
+- **State Persistence**: Audio player state maintained during navigation
+- **Progressive Enhancement**: Works without JavaScript for basic content
+- **Performance**: Lazy load audio components until needed
