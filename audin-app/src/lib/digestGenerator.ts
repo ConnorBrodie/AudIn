@@ -30,7 +30,7 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string)
       const content = extractEmailContent(email);
       return {
         ...processed,
-        content: content.slice(0, 500) // More aggressive content limiting for GPT
+        content: content // Content is already cleaned and limited in extractEmailContent
       };
     });
 

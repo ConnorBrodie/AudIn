@@ -219,8 +219,8 @@ function cleanEmailContent(content: string): string {
     }
   }
   
-  // Final hard limit for token management
-  const final = cleaned.slice(0, 150); // Reduced from 300 to 150 characters
+  // Final hard limit for token management (increased since we now clean intelligently)
+  const final = cleaned.slice(0, 400); // Increased from 150 to 400 characters
   
   // Log cleaning effectiveness (only in development)
   if (process.env.NODE_ENV === 'development' && content.length > final.length) {

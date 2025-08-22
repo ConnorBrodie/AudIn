@@ -118,6 +118,9 @@ SCRIPT REQUIREMENTS:
 - Then cover calendar events chronologically  
 - Use short sentences for better speech rhythm
 - IMPORTANT: Avoid robotic/repetitive phrasing
+- IMPORTANT: Do not just say how urgent an email is, mention and summarize the content of the email
+- IMPORTANT: It is much more important to read the content of the email than the subject line
+- Only use the urgency score to guide your language, only call somethin urgent if it really is
 - NEVER mention the urgency score of any email or calendar event
 - Even if an email is breif seems to lack content, still read some of it out loud instead of saying "more details are needed"
 - Use the word 'You' often, phrasing it like you are addressing the user directly
