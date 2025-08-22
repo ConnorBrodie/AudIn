@@ -2,15 +2,41 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radio, Settings, Play, Pause, Download, Copy } from "lucide-react";
+import { Radio, Settings, Play, Pause, Download, Copy, ArrowLeft } from "lucide-react";
+import DemoDataEditor from "@/components/DemoDataEditor";
+import VoiceSelector from "@/components/VoiceSelector";
+import { Email } from "@/types/email";
+import { CalendarEvent } from "@/types/calendar";
+import { demoPresets, getPresetByName } from "@/data/demoPresets";
+import { getDefaultVoice } from "@/lib/elevenLabsVoices";
+
+interface DigestData {
+  emailSummary: string;
+  podcastScript: string;
+  textDigest: string;
+  audioBase64: string;
+  processedEmails: number;
+  processedEvents: number;
+}
 
 export default function Dashboard() {
   const [isDemo, setIsDemo] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioReady, setAudioReady] = useState(false);
+  const [digestData, setDigestData] = useState<DigestData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
+  const [customDemoData, setCustomDemoData] = useState<{emails: Email[], calendar: CalendarEvent[]} | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<string>("Default");
+  const [ttsProvider, setTtsProvider] = useState<string>("Loading...");
+  const [isElevenLabsActive, setIsElevenLabsActive] = useState<boolean>(false);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(getDefaultVoice().id);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,31 +56,165 @@ export default function Dashboard() {
 
   const handleGenerateDigest = async () => {
     setIsGenerating(true);
+    setError(null);
     
-    // Simulate processing time for now
-    setTimeout(() => {
-      setIsGenerating(false);
+    try {
+      const response = await fetch('/api/generate-digest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mode: isDemo ? 'demo' : 'oauth',
+          customData: customDemoData,
+          voiceId: isElevenLabsActive ? selectedVoiceId : undefined
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate digest');
+      }
+
+      // Convert base64 audio to blob URL
+      const audioBlob = new Blob(
+        [Uint8Array.from(atob(result.data.audioBase64), c => c.charCodeAt(0))],
+        { type: 'audio/mpeg' }
+      );
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      setDigestData(result.data);
+      setAudioUrl(audioUrl);
       setAudioReady(true);
-    }, 3000);
+
+    } catch (err) {
+      console.error('Error generating digest:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
+      setIsGenerating(false);
+    }
   };
+
+  const toggleAudio = () => {
+    if (!audioRef || !audioUrl) return;
+
+    if (isPlaying) {
+      audioRef.pause();
+    } else {
+      audioRef.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const downloadAudio = () => {
+    if (!audioUrl) return;
+    
+    const link = document.createElement('a');
+    link.href = audioUrl;
+    link.download = `audin-digest-${new Date().toISOString().split('T')[0]}.mp3`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const copyText = () => {
+    if (!digestData) return;
+    
+    navigator.clipboard.writeText(digestData.textDigest);
+    // You could add a toast notification here
+  };
+
+  const handleDemoDataChange = (emails: Email[], calendar: CalendarEvent[]) => {
+    setCustomDemoData({ emails, calendar });
+    // Store in session storage for persistence during session
+    sessionStorage.setItem('audin-custom-demo-data', JSON.stringify({ emails, calendar }));
+    // Mark as custom when data is manually edited
+    setSelectedPreset("Custom");
+  };
+
+  const handlePresetSelection = (presetName: string) => {
+    const preset = getPresetByName(presetName);
+    if (preset) {
+      setCustomDemoData({ emails: preset.emails, calendar: preset.calendar });
+      setSelectedPreset(presetName);
+      // Store in session storage
+      sessionStorage.setItem('audin-custom-demo-data', JSON.stringify({ emails: preset.emails, calendar: preset.calendar }));
+      sessionStorage.setItem('audin-selected-preset', presetName);
+    }
+  };
+
+  // Load custom demo data and selected preset on mount
+  useEffect(() => {
+    if (isDemo) {
+      // Load saved preset selection
+      const savedPreset = sessionStorage.getItem('audin-selected-preset');
+      if (savedPreset) {
+        setSelectedPreset(savedPreset);
+      }
+
+      // Load saved custom data
+      const savedData = sessionStorage.getItem('audin-custom-demo-data');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          setCustomDemoData(parsed);
+        } catch (error) {
+          console.error('Failed to parse saved demo data:', error);
+          // Fallback to default preset
+          handlePresetSelection("Default");
+        }
+      } else {
+        // Initialize with default preset if no saved data
+        handlePresetSelection("Default");
+      }
+    }
+  }, [isDemo]);
+
+  // Load TTS provider status
+  useEffect(() => {
+    const fetchTTSStatus = async () => {
+      try {
+        const response = await fetch('/api/tts-status');
+        const result = await response.json();
+        if (result.success) {
+          setTtsProvider(result.data.activeProvider);
+          setIsElevenLabsActive(result.data.hasElevenLabs);
+        }
+      } catch (error) {
+        console.error('Failed to fetch TTS status:', error);
+        setTtsProvider("Unknown");
+      }
+    };
+
+    fetchTTSStatus();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
       <header className="border-b border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Radio className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-                AudIn
-              </h1>
-              {isDemo && (
-                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full">
-                  Demo Mode
+                      <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  <Button variant="ghost" size="sm">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Radio className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
+                  AudIn
+                </h1>
+                {isDemo && (
+                  <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 text-xs rounded-full">
+                    Demo Mode
+                  </span>
+                )}
+                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                  🎙️ {ttsProvider}
                 </span>
-              )}
-            </div>
+              </div>
             <Button variant="ghost" size="sm">
               <Settings className="h-4 w-4" />
             </Button>
@@ -78,6 +238,65 @@ export default function Dashboard() {
             </p>
           </div>
 
+          {/* Demo Preset Selector */}
+          {isDemo && (
+            <Card className="max-w-4xl mx-auto mb-6">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  📋 Demo Scenarios
+                </CardTitle>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Choose a preset scenario to test different inbox situations
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {demoPresets.map((preset) => (
+                    <Button
+                      key={preset.name}
+                      variant={selectedPreset === preset.name ? "default" : "outline"}
+                      onClick={() => handlePresetSelection(preset.name)}
+                      className="h-auto p-4 text-left justify-start relative"
+                    >
+                      <div className="w-full">
+                        <div className="font-medium text-sm mb-1">{preset.name}</div>
+                        <div className="text-xs opacity-80 line-clamp-2">{preset.description}</div>
+                        {selectedPreset === preset.name && (
+                          <div className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full"></div>
+                        )}
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+                
+                {/* Current Selection Info */}
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="text-sm text-slate-600 dark:text-slate-400">
+                    Currently selected: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedPreset}</span>
+                    {customDemoData && (
+                      <span className="ml-2">({customDemoData.emails.length} emails, {customDemoData.calendar.length} events)</span>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Voice Selector (ElevenLabs only) */}
+          <VoiceSelector
+            isElevenLabsActive={isElevenLabsActive}
+            selectedVoiceId={selectedVoiceId}
+            onVoiceChange={setSelectedVoiceId}
+          />
+
+          {/* Demo Data Editor */}
+          <DemoDataEditor
+            isDemo={isDemo}
+            onDataChange={handleDemoDataChange}
+            currentEmails={customDemoData?.emails || []}
+            currentCalendar={customDemoData?.calendar || []}
+          />
+
           {/* Generate Button */}
           {!audioReady && (
             <Card className="max-w-md mx-auto mb-8">
@@ -97,6 +316,11 @@ export default function Dashboard() {
                     "Generate Today's Digest"
                   )}
                 </Button>
+                {error && (
+                  <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                    <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -108,11 +332,14 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="animate-pulse text-sm text-slate-600 dark:text-slate-400">
-                      Processing your emails...
+                      🤖 Processing emails with AI...
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                      This may take 30-60 seconds
                     </div>
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full transition-all duration-1000 w-1/3"></div>
+                    <div className="bg-primary h-2 rounded-full animate-pulse"></div>
                   </div>
                 </div>
               </CardContent>
@@ -120,88 +347,84 @@ export default function Dashboard() {
           )}
 
           {/* Audio Player & Results */}
-          {audioReady && (
+          {audioReady && digestData && (
             <div className="space-y-6">
               {/* Audio Player */}
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Play className="h-5 w-5" />
-                    Today's Digest Ready
+                    Your Digest is Ready!
                   </CardTitle>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Processed {digestData.processedEmails} emails and {digestData.processedEvents} calendar events
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Hidden audio element */}
+                  {audioUrl && (
+                    <audio
+                      ref={setAudioRef}
+                      src={audioUrl}
+                      onEnded={() => setIsPlaying(false)}
+                      onPlay={() => setIsPlaying(true)}
+                      onPause={() => setIsPlaying(false)}
+                    />
+                  )}
+                  
                   <div className="flex items-center gap-4">
-                    <Button size="sm">
-                      <Play className="h-4 w-4" />
+                    <Button size="sm" onClick={toggleAudio} disabled={!audioUrl}>
+                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
                     <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                       <div className="bg-primary h-2 rounded-full w-0"></div>
                     </div>
-                    <span className="text-sm text-slate-600 dark:text-slate-400">2:15</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">~2:00</span>
                   </div>
                   
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={downloadAudio} disabled={!audioUrl}>
                       <Download className="h-4 w-4 mr-1" />
-                      MP3
+                      Download MP3
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={copyText}>
                       <Copy className="h-4 w-4 mr-1" />
-                      Text
+                      Copy Text
                     </Button>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Email Categories Preview */}
-              <div className="grid md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      ⚡ Urgent
-                      <span className="text-sm font-normal text-slate-500">(2)</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                      <div>• Meeting reminder from Sarah</div>
-                      <div>• Budget approval needed</div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Text Digest Display */}
+              <Card className="max-w-4xl mx-auto">
+                <CardHeader>
+                  <CardTitle>📧 Email Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                      {digestData.emailSummary}
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      📬 What's New
-                      <span className="text-sm font-normal text-slate-500">(5)</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                      <div>• Weekly newsletter</div>
-                      <div>• Project update from team</div>
-                      <div>• Conference invitation</div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      🧠 Keep in Mind
-                      <span className="text-sm font-normal text-slate-500">(3)</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                      <div>• Social media updates</div>
-                      <div>• Marketing materials</div>
-                      <div>• Personal email</div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {/* Generate New Digest Button */}
+              <div className="text-center">
+                <Button 
+                  onClick={() => {
+                    setAudioReady(false);
+                    setDigestData(null);
+                    setError(null);
+                    if (audioUrl) {
+                      URL.revokeObjectURL(audioUrl);
+                      setAudioUrl(null);
+                    }
+                  }}
+                  variant="outline"
+                >
+                  Generate New Digest
+                </Button>
               </div>
             </div>
           )}

@@ -1,23 +1,23 @@
 # AudIn Development Checklist
 
 ## Phase 1: Project Foundation & Setup
-- [ ] Initialize Next.js project with App Router
-- [ ] Install and configure TailwindCSS
-- [ ] Install and configure shadcn/ui components
-- [ ] Set up project structure and folders
-- [ ] Create basic layout component
+- [x] Initialize Next.js project with App Router
+- [x] Install and configure TailwindCSS
+- [x] Install and configure shadcn/ui components
+- [x] Set up project structure and folders
+- [x] Create basic layout component
 - [ ] Set up environment variables (.env.local)
-- [ ] Install required dependencies (OpenAI, audio libraries)
+- [x] Install required dependencies (OpenAI, audio libraries)
 - [ ] Create mock email/calendar data structures
 - [ ] Set up TypeScript types for emails, calendar events, and audio
 
 ## Phase 2: Core Pages & Navigation
-- [ ] Create landing page with API key input
-- [ ] Create dashboard/main app page
+- [x] Create landing page with OAuth and demo options
+- [x] Create dashboard/main app page
 - [ ] Create settings page (optional for MVP)
-- [ ] Implement basic routing between pages
-- [ ] Add responsive design for mobile/desktop
-- [ ] Create loading states and error boundaries
+- [x] Implement basic routing between pages
+- [x] Add responsive design for mobile/desktop
+- [x] Create loading states and error boundaries
 
 ## Phase 3: Mock Data & Content Structure
 - [ ] Create realistic mock email data (20+ emails)

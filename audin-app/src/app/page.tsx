@@ -1,30 +1,25 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radio, Volume2, Clock, Shield, Zap } from "lucide-react";
+import { Radio, Volume2, Clock, Shield, Mail, Sparkles } from "lucide-react";
 
 export default function Home() {
-  const [apiKey, setApiKey] = useState("");
-  const [demoMode, setDemoMode] = useState(false);
   const router = useRouter();
 
-  const handleGetStarted = () => {
-    if (demoMode) {
-      // Store demo mode flag
-      sessionStorage.setItem("audin-demo-mode", "true");
-      router.push("/dashboard");
-    } else if (apiKey.trim()) {
-      // Store API key in session storage
-      sessionStorage.setItem("audin-api-key", apiKey.trim());
-      router.push("/dashboard");
-    }
+  const handleOAuthSignIn = () => {
+    // TODO: Implement OAuth flow
+    console.log("OAuth sign-in clicked");
+    // For now, just show an alert
+    alert("OAuth integration coming soon! Use demo mode to test the app.");
   };
 
-  const isValid = demoMode || apiKey.trim().length > 0;
+  const handleDemoMode = () => {
+    // Store demo mode flag and navigate
+    sessionStorage.setItem("audin-demo-mode", "true");
+    router.push("/dashboard");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
@@ -88,55 +83,104 @@ export default function Home() {
             </Card>
           </div>
 
-          {/* API Key Input Section */}
-          <Card className="max-w-md mx-auto border-slate-200 dark:border-slate-700">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
+          {/* Get Started Section */}
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
                 Get Started
-              </CardTitle>
-              <CardDescription>
-                Enter your OpenAI API key to power your personal inbox radio
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  type="password"
-                  placeholder="sk-..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  disabled={demoMode}
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Your API key is stored locally and never sent to our servers
-                </p>
-              </div>
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Choose how you'd like to experience AudIn
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* OAuth Option */}
+              <Card className="border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <Mail className="h-8 w-8 mx-auto mb-3 text-primary" />
+                  <CardTitle className="text-xl text-center">
+                    Connect Gmail
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    Sign in with Google to access your real emails and calendar events
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Real-time email summaries
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Calendar integration
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      Full personalization
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleOAuthSignIn}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Sign in with Google
+                  </Button>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                    Your data stays private - all processing happens in your browser
+                  </p>
+                </CardContent>
+              </Card>
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="demo-mode"
-                  checked={demoMode}
-                  onChange={(e) => setDemoMode(e.target.checked)}
-                  className="rounded border-slate-300"
-                />
-                <label htmlFor="demo-mode" className="text-sm text-slate-600 dark:text-slate-300">
-                  Try demo mode (no API key required)
-                </label>
-              </div>
-
-              <Button 
-                onClick={handleGetStarted}
-                disabled={!isValid}
-                className="w-full"
-                size="lg"
-              >
-                {demoMode ? "Try Demo" : "Start Your Radio"}
-              </Button>
-            </CardContent>
-          </Card>
+              {/* Demo Option */}
+              <Card className="border-slate-200 dark:border-slate-700 hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <Sparkles className="h-8 w-8 mx-auto mb-3 text-primary" />
+                  <CardTitle className="text-xl text-center">
+                    Try Demo
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    Experience AudIn with sample emails and calendar events
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      Sample email content
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      Mock calendar events
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      Full feature preview
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleDemoMode}
+                    variant="outline"
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Try Demo Mode
+                  </Button>
+                  
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                    Perfect for testing before connecting your real account
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
           {/* Use Cases */}
           <div className="mt-16 text-center">
