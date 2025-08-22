@@ -23,7 +23,7 @@ export async function processEmailsToJSON(emailContent: string): Promise<EmailSu
 For each email, provide:
 - sender: Clean sender name (no email addresses)
 - subject: Email subject line
-- summary: 1-2 sentence summary of key points and actions needed
+- summary: Concise summary focusing on the EMAIL BODY CONTENT. Use 1 sentence for simple emails, up to 3 sentences for complex ones. Include specific details, numbers, dates, and actions. Avoid repetition - don't restate the same information multiple times.
 - category: "urgent", "important", or "general" 
 - urgency_score: Rate 1-10 based on urgency criteria below
 - deadline_iso: ISO date if deadline mentioned (optional)
@@ -39,6 +39,21 @@ CATEGORY ASSIGNMENT:
 - urgent: scores 7-10
 - important: scores 4-6  
 - general: scores 1-3
+
+SUMMARY LENGTH RULES:
+- SIMPLE emails (meeting requests, quick questions, brief updates) = 1 sentence only
+- COMPLEX emails (detailed proposals, multiple topics, financial info) = 2-3 sentences
+- NEWSLETTERS = 1-2 key topics mentioned briefly
+
+EXAMPLES:
+Simple: "Steven wants to meet at 11 to discuss the budget." (NOT: "Steven wants to meet at 11. Meeting is about budget. Confirmation needed.")
+Complex: "Q4 budget approval needed by Friday for $50,000 marketing campaign. Meeting at 3 PM to discuss allocation across digital ads and events."
+
+GUIDELINES:
+- Focus on EMAIL CONTENT (body text), not subject line
+- Include specific details: amounts, dates, times, names, actions
+- NO REPETITION - don't restate the same information multiple ways
+- Each sentence must add NEW information, not repeat what was already said
 
 Return ONLY a JSON array with no additional text:
 
@@ -57,7 +72,7 @@ ${emailContent}`;
           content: prompt
         }
       ],
-      max_tokens: 1500,
+      max_tokens: 2000, // Increased for more detailed summaries
       temperature: 0.1, // Very deterministic for JSON output
       response_format: { type: "json_object" }
     });
@@ -99,6 +114,13 @@ export async function generatePodcastScript(sortedEmails: EmailSummary[], calend
   const emailsByUrgency = sortedEmails.map((email, index) => 
     `${index + 1}. ${email.sender}: ${email.summary} (Urgency: ${email.urgency_score}/10)`
   ).join('\n');
+  
+  // Debug logging to see what content is being sent to GPT
+  console.log('📝 EMAILS FORMATTED FOR SCRIPT GENERATION:');
+  console.log('=' .repeat(50));
+  console.log(emailsByUrgency);
+  console.log('=' .repeat(50));
+  console.log(`📊 Total characters: ${emailsByUrgency.length}`);
 
   const prompt = `You are an expert podcast scriptwriter who creates short, personal daily briefings, based on their unread emails and calendar events. 
 Write a natural, conversational 2-minute podcast script (about 320 ± 30 words) for a professional. 
@@ -118,13 +140,10 @@ SCRIPT REQUIREMENTS:
 - Then cover calendar events chronologically  
 - Use short sentences for better speech rhythm
 - IMPORTANT: Avoid robotic/repetitive phrasing
-- IMPORTANT: Do not just say how urgent an email is, mention and summarize the content of the email
-- IMPORTANT: It is much more important to read the content of the email than the subject line
 - Only use the urgency score to guide your language, only call somethin urgent if it really is
 - NEVER mention the urgency score of any email or calendar event
-- Even if an email is breif seems to lack content, still read some of it out loud instead of saying "more details are needed"
 - Use the word 'You' often, phrasing it like you are addressing the user directly
-- Feel free to occasionallyadd your own comments and thoughts about email/calendar events if anything stands out
+- Feel free to occasionally add your own comments and thoughts about email/calendar events if anything stands out
 - Add natural pause tokens: [PAUSE:short] and [PAUSE:long]
 Use casual podcast language: "You've got...", "Quick heads up...", "Looking at your day...", "Moving on to...", "That’s your morning brief — you’re set to go."
 - No AM/PM - just say "two-thirty", "nine", "four forty-five"

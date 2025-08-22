@@ -30,7 +30,7 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string)
       const content = extractEmailContent(email);
       return {
         ...processed,
-        content: content // Content is already cleaned and limited in extractEmailContent
+        body: content || '' // Ensure body is never undefined, use extractEmailContent result
       };
     });
 

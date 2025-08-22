@@ -133,6 +133,12 @@ export function extractEmailContent(email: Email): string {
 function cleanEmailContent(content: string): string {
   if (!content) return '';
   
+  // Skip extremely long emails (likely newsletters/spam) - take first part only
+  if (content.length > 3000) {
+    console.log(`📧 Email too long (${content.length} chars), taking first 1000 chars only`);
+    content = content.substring(0, 1000);
+  }
+  
   // Split into lines for line-by-line processing
   let lines = content.split('\n');
   
@@ -145,31 +151,23 @@ function cleanEmailContent(content: string): string {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim().toLowerCase();
     
-    // Common signature markers
+    // More conservative signature markers (less aggressive)
     if (
       line === '--' ||
-      line.startsWith('--') ||
-      line.includes('sent from my') ||
-      line.includes('get outlook for') ||
-      line.includes('confidential') ||
-      line.includes('disclaimer') ||
-      line.includes('unsubscribe') ||
-      line.includes('this email was sent') ||
-      line.includes('if you no longer wish') ||
-      line.includes('please consider the environment') ||
-      line.includes('think before you print') ||
-      line.match(/^thanks?[,!.]?\s*$/i) ||
-      line.match(/^best[,!.]?\s*$/i) ||
-      line.match(/^regards[,!.]?\s*$/i) ||
-      line.match(/^cheers[,!.]?\s*$/i) ||
-      line.match(/^sincerely[,!.]?\s*$/i) ||
-      // Phone/email patterns
-      line.match(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/) ||
-      line.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/) ||
-      // Common footer patterns
-      line.includes('©') ||
-      line.includes('copyright') ||
-      line.includes('all rights reserved')
+      line === '-- ' ||
+      line.includes('sent from my iphone') ||
+      line.includes('sent from my android') ||
+      line.includes('get outlook for ios') ||
+      line.includes('get outlook for android') ||
+      line.includes('confidential and proprietary') ||
+      line.includes('if you no longer wish to receive') ||
+      line.includes('please consider the environment before printing') ||
+      // Only match standalone closing words, not in sentences
+      line.match(/^thanks?\s*[,!.]?\s*$/i) ||
+      line.match(/^best regards?\s*[,!.]?\s*$/i) ||
+      line.match(/^sincerely yours?\s*[,!.]?\s*$/i) ||
+      // Copyright only if it's clearly a footer
+      (line.includes('©') && line.includes('all rights reserved'))
     ) {
       messageEndIndex = i;
       break;
@@ -219,12 +217,18 @@ function cleanEmailContent(content: string): string {
     }
   }
   
-  // Final hard limit for token management (increased since we now clean intelligently)
-  const final = cleaned.slice(0, 400); // Increased from 150 to 400 characters
+  // Reasonable limit for email content - prioritize meaningful content over length
+  const final = cleaned.slice(0, 200); // Reduced to 200 characters for better token management
   
-  // Log cleaning effectiveness (only in development)
-  if (process.env.NODE_ENV === 'development' && content.length > final.length) {
-    console.log(`📧 Cleaned email: ${content.length} → ${final.length} chars (${Math.round((1 - final.length/content.length) * 100)}% reduction)`);
+  // Debug logging to see content extraction process
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 EMAIL CONTENT EXTRACTION DEBUG:');
+    console.log(`Raw content length: ${content.length}`);
+    console.log(`Raw content preview: "${content.substring(0, 200)}..."`);
+    console.log(`Cleaned content length: ${cleaned.length}`);
+    console.log(`Cleaned content: "${cleaned}"`);
+    console.log(`Final content (after limit): "${final}"`);
+    console.log('---');
   }
   
   return final;

@@ -102,8 +102,22 @@ Content: ${email.body}
 ---`;
   }).join('\n\n');
   
-  // Log character count for debugging
+  // Debug logging to see what content we're sending to GPT
   console.log(`📊 Prepared ${emails.length} emails for GPT (${formatted.length} characters)`);
+  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 EMAILS BEING SENT TO GPT:');
+    console.log('=' .repeat(60));
+    emails.forEach((email, index) => {
+      console.log(`EMAIL ${index + 1}:`);
+      console.log(`From: ${email.from}`);
+      console.log(`Subject: ${email.subject}`);
+      console.log(`Body content: "${email.body}"`);
+      console.log(`Body length: ${email.body.length} characters`);
+      console.log('-'.repeat(40));
+    });
+    console.log('=' .repeat(60));
+  }
   
   return formatted;
 }
