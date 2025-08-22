@@ -119,6 +119,7 @@ SCRIPT REQUIREMENTS:
 - Use short sentences for better speech rhythm
 - IMPORTANT: Avoid robotic/repetitive phrasing
 - NEVER mention the urgency score of any email or calendar event
+- Even if an email is breif, don't just say 'needs more info...', mention the content
 - Use the word 'You' often, phrasing it like you are addressing the user directly
 - Feel free to occasionallyadd your own comments and thoughts about email/calendar events if anything stands out
 - Add natural pause tokens: [PAUSE:short] and [PAUSE:long]

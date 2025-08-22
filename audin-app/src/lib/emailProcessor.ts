@@ -93,7 +93,7 @@ export function sortEmailsByUrgency(emails: EmailSummary[]): EmailSummary[] {
 
 // Prepare emails for GPT processing
 export function prepareEmailsForGPT(emails: ProcessedEmail[]): string {
-  return emails.map((email, index) => {
+  const formatted = emails.map((email, index) => {
     return `EMAIL ${index + 1}:
 From: ${email.from}
 Subject: ${email.subject}
@@ -101,6 +101,11 @@ Date: ${email.date.toLocaleDateString()}
 Content: ${email.body}
 ---`;
   }).join('\n\n');
+  
+  // Log character count for debugging
+  console.log(`📊 Prepared ${emails.length} emails for GPT (${formatted.length} characters)`);
+  
+  return formatted;
 }
 
 // Prepare calendar events for GPT processing  

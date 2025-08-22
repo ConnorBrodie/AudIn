@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +19,12 @@ interface DigestData {
   podcastScript: string;
   textDigest: string;
   audioBase64: string;
-  processedEmails: number;
-  processedEvents: number;
+  processedEmails: number | any[]; // Can be number (demo) or array (oauth)
+  processedEvents: number | any[]; // Can be number (demo) or array (oauth)
 }
 
 export default function Dashboard() {
+  const { data: session, status } = useSession();
   const [isDemo, setIsDemo] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -40,19 +42,21 @@ export default function Dashboard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user has API key or is in demo mode
+    // Check authentication status and mode
+    if (status === "loading") return; // Wait for session to load
+    
     const demoMode = sessionStorage.getItem("audin-demo-mode");
-    const storedApiKey = sessionStorage.getItem("audin-api-key");
     
     if (demoMode === "true") {
       setIsDemo(true);
-    } else if (storedApiKey) {
-      setApiKey(storedApiKey);
+    } else if (session) {
+      // User is authenticated with OAuth
+      setIsDemo(false);
     } else {
-      // Redirect back to home if no API key or demo mode
+      // No session and not in demo mode - redirect to home
       router.push("/");
     }
-  }, [router]);
+  }, [session, status, router]);
 
   const handleGenerateDigest = async () => {
     setIsGenerating(true);
@@ -211,13 +215,29 @@ export default function Dashboard() {
                     Demo Mode
                   </span>
                 )}
-                <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                {session && (
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs rounded-full">
+                    📧 {session.user?.email}
+                  </span>
+                )}
+                <span className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 text-xs rounded-full">
                   🎙️ {ttsProvider}
                 </span>
               </div>
-            <Button variant="ghost" size="sm">
-              <Settings className="h-4 w-4" />
-            </Button>
+              <div className="flex items-center gap-2">
+                {session && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => signOut({ callbackUrl: '/' })}
+                  >
+                    Sign Out
+                  </Button>
+                )}
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </div>
           </div>
         </div>
       </header>
@@ -233,7 +253,7 @@ export default function Dashboard() {
             <p className="text-slate-600 dark:text-slate-400">
               {isDemo 
                 ? "Experience AudIn with sample emails and calendar events"
-                : "We'll process your latest emails and calendar events"
+                : `We'll process your unread emails and today's calendar events from ${session?.user?.email}`
               }
             </p>
           </div>
@@ -357,7 +377,7 @@ export default function Dashboard() {
                     Your Digest is Ready!
                   </CardTitle>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Processed {digestData.processedEmails} emails and {digestData.processedEvents} calendar events
+                    Processed {Array.isArray(digestData.processedEmails) ? digestData.processedEmails.length : digestData.processedEmails} emails and {Array.isArray(digestData.processedEvents) ? digestData.processedEvents.length : digestData.processedEvents} calendar events
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">

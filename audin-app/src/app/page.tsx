@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Radio, Volume2, Clock, Shield, Mail, Sparkles } from "lucide-react";
@@ -9,10 +10,9 @@ export default function Home() {
   const router = useRouter();
 
   const handleOAuthSignIn = () => {
-    // TODO: Implement OAuth flow
-    console.log("OAuth sign-in clicked");
-    // For now, just show an alert
-    alert("OAuth integration coming soon! Use demo mode to test the app.");
+    // Clear demo mode flag and initiate OAuth sign-in
+    sessionStorage.removeItem("audin-demo-mode");
+    signIn('google', { callbackUrl: '/dashboard' });
   };
 
   const handleDemoMode = () => {
