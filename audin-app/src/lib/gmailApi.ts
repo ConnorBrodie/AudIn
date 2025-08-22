@@ -126,12 +126,106 @@ export function extractEmailContent(email: Email): string {
   }
   
   // Clean up the content for GPT processing
-  return content
+  return cleanEmailContent(content);
+}
+
+// Advanced email content cleaning to remove signatures, footers, and reply chains
+function cleanEmailContent(content: string): string {
+  if (!content) return '';
+  
+  // Split into lines for line-by-line processing
+  let lines = content.split('\n');
+  
+  // Remove quoted reply chains (lines starting with >)
+  lines = lines.filter(line => !line.trim().startsWith('>'));
+  
+  // Find the end of the actual message (before signatures/footers)
+  let messageEndIndex = lines.length;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim().toLowerCase();
+    
+    // Common signature markers
+    if (
+      line === '--' ||
+      line.startsWith('--') ||
+      line.includes('sent from my') ||
+      line.includes('get outlook for') ||
+      line.includes('confidential') ||
+      line.includes('disclaimer') ||
+      line.includes('unsubscribe') ||
+      line.includes('this email was sent') ||
+      line.includes('if you no longer wish') ||
+      line.includes('please consider the environment') ||
+      line.includes('think before you print') ||
+      line.match(/^thanks?[,!.]?\s*$/i) ||
+      line.match(/^best[,!.]?\s*$/i) ||
+      line.match(/^regards[,!.]?\s*$/i) ||
+      line.match(/^cheers[,!.]?\s*$/i) ||
+      line.match(/^sincerely[,!.]?\s*$/i) ||
+      // Phone/email patterns
+      line.match(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/) ||
+      line.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/) ||
+      // Common footer patterns
+      line.includes('©') ||
+      line.includes('copyright') ||
+      line.includes('all rights reserved')
+    ) {
+      messageEndIndex = i;
+      break;
+    }
+  }
+  
+  // Take only the message content (before signatures/footers)
+  const messageLines = lines.slice(0, messageEndIndex);
+  
+  // Remove common email headers/metadata that might appear in body
+  const cleanedLines = messageLines.filter(line => {
+    const trimmed = line.trim().toLowerCase();
+    return !(
+      trimmed.startsWith('from:') ||
+      trimmed.startsWith('to:') ||
+      trimmed.startsWith('sent:') ||
+      trimmed.startsWith('date:') ||
+      trimmed.startsWith('subject:') ||
+      trimmed.startsWith('cc:') ||
+      trimmed.startsWith('bcc:') ||
+      trimmed.startsWith('reply-to:') ||
+      trimmed === '' && messageLines.indexOf(line) < 3 // Remove empty lines at start
+    );
+  });
+  
+  // Join back and clean up
+  let cleaned = cleanedLines.join('\n')
     .replace(/\r\n/g, '\n') // Normalize line endings
     .replace(/\n{3,}/g, '\n\n') // Remove excessive line breaks
     .replace(/[ \t]+/g, ' ') // Normalize whitespace
-    .replace(/^>.*$/gm, '') // Remove quoted reply lines
-    .replace(/^--.*$/gm, '') // Remove signature lines
-    .trim()
-    .slice(0, 300); // Hard limit to 300 characters for token management
+    .replace(/&nbsp;/g, ' ') // HTML non-breaking spaces
+    .replace(/&amp;/g, '&') // HTML entities
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .trim();
+  
+  // If the cleaned content is too short, it might have been over-aggressive
+  // Fall back to snippet or first few sentences
+  if (cleaned.length < 20 && content.length > 50) {
+    // Take first 2 sentences if available
+    const sentences = content.split(/[.!?]+/);
+    if (sentences.length >= 2) {
+      cleaned = sentences.slice(0, 2).join('. ').trim() + '.';
+    } else {
+      cleaned = content.substring(0, 200);
+    }
+  }
+  
+  // Final hard limit for token management
+  const final = cleaned.slice(0, 150); // Reduced from 300 to 150 characters
+  
+  // Log cleaning effectiveness (only in development)
+  if (process.env.NODE_ENV === 'development' && content.length > final.length) {
+    console.log(`📧 Cleaned email: ${content.length} → ${final.length} chars (${Math.round((1 - final.length/content.length) * 100)}% reduction)`);
+  }
+  
+  return final;
 }
