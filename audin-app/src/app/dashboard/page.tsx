@@ -6,14 +6,14 @@ import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Radio, Settings, Play, Pause, Download, Copy, ArrowLeft } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Radio, Settings, Play, Pause, Download, Copy, ArrowLeft, ChevronDown } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DemoDataEditor from "@/components/DemoDataEditor";
-import VoiceSelector from "@/components/VoiceSelector";
 import { Email } from "@/types/email";
 import { CalendarEvent } from "@/types/calendar";
 import { demoPresets, getPresetByName } from "@/data/demoPresets";
-import { getDefaultVoice } from "@/lib/elevenLabsVoices";
+import { getDefaultVoice, ELEVENLABS_VOICES } from "@/lib/elevenLabsVoices";
 
 interface DigestData {
   emailSummary: string;
@@ -319,120 +319,149 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Mode Selector */}
-          <Card className="max-w-4xl mx-auto mb-6">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg">📅 Digest Mode</CardTitle>
+
+
+
+
+
+
+          {/* Main Configuration Box */}
+          <Card className="max-w-3xl mx-auto mb-8">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                🎙️ Create Your Daily Digest
+              </CardTitle>
+              <p className="text-slate-600 dark:text-slate-400">
+                Configure your personalized audio briefing
+              </p>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {(['auto', 'morning', 'evening'] as const).map((mode) => (
-                    <label
-                      key={mode}
-                      className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
-                        digestMode === mode
-                          ? 'border-primary bg-primary/5 shadow-sm'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="digestMode"
-                        value={mode}
-                        checked={digestMode === mode}
-                        onChange={(e) => setDigestMode(e.target.value as 'auto' | 'morning' | 'evening')}
-                        className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
-                      />
-                      <div className="flex-1">
-                        <div className="font-medium text-slate-900 dark:text-slate-100">
-                          {mode === 'auto' && '🤖 Auto'}
-                          {mode === 'morning' && '🌅 Morning Brief'}
-                          {mode === 'evening' && '🌙 Evening Recap'}
+            <CardContent className="space-y-6">
+              {/* Configuration Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Digest Mode Selector */}
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    📅 Digest Mode
+                  </label>
+                  <Select value={digestMode} onValueChange={(value: 'auto' | 'morning' | 'evening') => setDigestMode(value)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">
+                        <div className="flex items-center gap-2">
+                          <span>🤖 Auto</span>
+                          <span className="text-xs text-slate-500">- Detects time of day</span>
                         </div>
-                        <div className="text-sm text-slate-600 dark:text-slate-400">
-                          {mode === 'auto' && 'Detects time of day automatically'}
-                          {mode === 'morning' && 'Today\'s urgent items & schedule'}
-                          {mode === 'evening' && 'Pending items & tomorrow prep'}
+                      </SelectItem>
+                      <SelectItem value="morning">
+                        <div className="flex items-center gap-2">
+                          <span>🌅 Morning Brief</span>
+                          <span className="text-xs text-slate-500">- Today's urgent items</span>
                         </div>
-                      </div>
+                      </SelectItem>
+                      <SelectItem value="evening">
+                        <div className="flex items-center gap-2">
+                          <span>🌙 Evening Recap</span>
+                          <span className="text-xs text-slate-500">- Pending & tomorrow prep</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {/* Current mode indicator */}
+                  <div className="text-xs text-slate-500 dark:text-slate-400">
+                    Current: <span className="font-medium text-primary">{getModeDisplayText()}</span>
+                  </div>
+                </div>
+
+                {/* Voice Selector */}
+                {isElevenLabsActive && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      🎤 Voice Selection
                     </label>
-                  ))}
-                </div>
-                
-                {/* Current mode indicator */}
-                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
-                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Current mode: <span className="text-primary">{getModeDisplayText()}</span>
+                    <Select value={selectedVoiceId} onValueChange={setSelectedVoiceId}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 py-1 text-xs font-medium text-slate-500 uppercase tracking-wide">
+                          Female Voices
+                        </div>
+                        {ELEVENLABS_VOICES.filter(v => v.gender === 'female').map((voice) => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{voice.name}</span>
+                              {voice.name === 'Bella' && <span className="text-xs text-primary font-medium">(Default)</span>}
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <div className="px-2 py-1 text-xs font-medium text-slate-500 uppercase tracking-wide mt-2">
+                          Male Voices
+                        </div>
+                        {ELEVENLABS_VOICES.filter(v => v.gender === 'male').map((voice) => (
+                          <SelectItem key={voice.id} value={voice.id}>
+                            <span>{voice.name}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      Using ElevenLabs premium voices
+                    </div>
                   </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                )}
 
-          {/* Demo Preset Selector */}
-          {isDemo && (
-            <Card className="max-w-4xl mx-auto mb-6">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  📋 Demo Scenarios
-                </CardTitle>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Choose a preset scenario to test different inbox situations
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  {demoPresets.map((preset) => (
-                    <Button
-                      key={preset.name}
-                      variant={selectedPreset === preset.name ? "default" : "outline"}
-                      onClick={() => handlePresetSelection(preset.name)}
-                      className="h-auto p-4 text-left justify-start relative"
-                    >
-                      <div className="w-full">
-                        <div className="font-medium text-sm mb-1">{preset.name}</div>
-                        <div className="text-xs opacity-80 line-clamp-2">{preset.description}</div>
-                        {selectedPreset === preset.name && (
-                          <div className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full"></div>
-                        )}
+                {/* TTS Provider indicator if not ElevenLabs */}
+                {!isElevenLabsActive && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      🎤 Voice Provider
+                    </label>
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border">
+                      <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {ttsProvider}
                       </div>
-                    </Button>
-                  ))}
-                </div>
-                
-                {/* Current Selection Info */}
-                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-                  <div className="text-sm text-slate-600 dark:text-slate-400">
-                    Currently selected: <span className="font-medium text-slate-900 dark:text-slate-100">{selectedPreset}</span>
-                    {customDemoData && (
-                      <span className="ml-2">({customDemoData.emails.length} emails, {customDemoData.calendar.length} events)</span>
-                    )}
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Add ELEVEN_LABS_KEY to .env for premium voices
+                      </div>
+                    </div>
                   </div>
+                )}
+              </div>
+
+              {/* Demo Scenarios (if in demo mode) */}
+              {isDemo && (
+                <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                  <label className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                    📋 Demo Scenario
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {demoPresets.map((preset) => (
+                      <Button
+                        key={preset.name}
+                        variant={selectedPreset === preset.name ? "default" : "outline"}
+                        onClick={() => handlePresetSelection(preset.name)}
+                        size="sm"
+                        className="h-auto p-3 text-left justify-start relative"
+                      >
+                        <div className="w-full">
+                          <div className="font-medium text-xs mb-1">{preset.name}</div>
+                          <div className="text-xs opacity-70 line-clamp-2">{preset.description}</div>
+                        </div>
+                      </Button>
+                    ))}
+                  </div>
+                  {customDemoData && (
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      Selected: <span className="font-medium">{selectedPreset}</span> • {customDemoData.emails.length} emails, {customDemoData.calendar.length} events
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {/* Voice Selector (ElevenLabs only) */}
-          <VoiceSelector
-            isElevenLabsActive={isElevenLabsActive}
-            selectedVoiceId={selectedVoiceId}
-            onVoiceChange={setSelectedVoiceId}
-          />
-
-          {/* Demo Data Editor */}
-          <DemoDataEditor
-            isDemo={isDemo}
-            onDataChange={handleDemoDataChange}
-            currentEmails={customDemoData?.emails || []}
-            currentCalendar={customDemoData?.calendar || []}
-          />
-
-          {/* Generate Button */}
-          {!audioReady && (
-            <Card className="max-w-md mx-auto mb-8">
-              <CardContent className="pt-6">
+              {/* Generate Button */}
+              <div className="pt-4">
                 <Button 
                   onClick={handleGenerateDigest}
                   disabled={isGenerating}
@@ -449,13 +478,22 @@ export default function Dashboard() {
                   )}
                 </Button>
                 {error && (
-                  <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                     <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Demo Data Editor */}
+          <DemoDataEditor
+            isDemo={isDemo}
+            onDataChange={handleDemoDataChange}
+            currentEmails={customDemoData?.emails || []}
+            currentCalendar={customDemoData?.calendar || []}
+          />
+
 
           {/* Loading State */}
           {isGenerating && (

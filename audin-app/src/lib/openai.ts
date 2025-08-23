@@ -199,6 +199,7 @@ SCRIPT REQUIREMENTS:
 - Feel free to occasionally add your own comments and thoughts about email/calendar events if anything stands out
 - Add natural pause tokens: [PAUSE:short] and [PAUSE:long]
 - If you notice that two emails are related, or an email is related to a calendar event, you can mention this in the script
+- MINIMUM EMAIL COVERAGE: Each email must get at least 2 sentences in the script - one to introduce the sender/topic, and another with details or action needed
 Use casual podcast language: "You've got...", "Quick heads up...", "Looking at your day...", "Moving on to...", "That’s your morning brief — you’re set to go."
 - No AM/PM - just say "two-thirty", "nine", "four forty-five"
 - Target ~300-350 words for 2-minute duration
@@ -238,6 +239,12 @@ STRUCTURE:
 3. Calendar overview (chronological) [PAUSE:short]
 4. Encouraging closing
 
+EMAIL COVERAGE EXAMPLE:
+For each email, use this pattern:
+"Sarah from marketing sent you an update about the campaign. [PAUSE:short] She needs your approval on the budget changes by tomorrow and wants to schedule a quick call to discuss the timeline."
+
+NEVER reduce an email to just one sentence like: "Sarah needs budget approval." Always provide the context and details in at least 2 sentences.
+
 Your output will be the exact script, no other text. It will be read by a TTS engine, so make sure it is formatted correctly for TTS.
 
 Generate the script now:`;
@@ -253,7 +260,12 @@ Your scripts must sound natural, conversational, and easy to follow when spoken 
 You write in a warm, professional style that feels like a friendly assistant — never robotic. 
 You balance brevity with flow, using short sentences and smooth transitions. 
 You insert strategic pause markers ([PAUSE:short], [PAUSE:long]) to improve TTS rhythm and emphasis. 
-Your output should always read like a polished, human-delivered morning podcast.`
+Your output should always read like a polished, human-delivered morning podcast.
+
+CRITICAL RULE: Every single email must receive a minimum of 2 sentences in your script:
+- Sentence 1: Introduce the sender and main topic
+- Sentence 2: Provide specific details, context, or action needed
+This ensures comprehensive coverage and prevents any email from being glossed over.`
 
         },
         {
