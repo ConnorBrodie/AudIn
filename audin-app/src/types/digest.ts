@@ -5,8 +5,12 @@ export interface EmailSummary {
   subject: string;
   summary: string;
   category: "urgent" | "important" | "general";
-  urgency_score: number; // 1-10, AI-determined
+  importance_score: number; // 1-10, AI-determined
   deadline_iso?: string; // ISO format if deadline detected
+  // Forwarding information (optional)
+  is_forwarded?: boolean;
+  forwarded_by?: string;
+  original_sender?: string;
 }
 
 export interface CalendarSummary {

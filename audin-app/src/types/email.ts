@@ -35,4 +35,8 @@ export interface ProcessedEmail {
   date: Date;
   snippet: string;
   isUnread: boolean;
+  // Forwarding information
+  isForwarded?: boolean;
+  forwardedBy?: string;
+  originalSender?: string;
 }

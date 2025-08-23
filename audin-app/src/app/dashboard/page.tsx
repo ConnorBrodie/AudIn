@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Radio, Settings, Play, Pause, Download, Copy, ArrowLeft, ChevronDown } from "lucide-react";
+import { Radio, Settings, Play, Pause, Download, Copy, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import DemoDataEditor from "@/components/DemoDataEditor";
 import { Email } from "@/types/email";
@@ -43,6 +43,10 @@ export default function Dashboard() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [digestMode, setDigestMode] = useState<'auto' | 'morning' | 'evening'>('auto');
   const [isClient, setIsClient] = useState(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [isScriptExpanded, setIsScriptExpanded] = useState<boolean>(false);
   const router = useRouter();
 
   // Helper function to get actual digest mode
@@ -80,6 +84,71 @@ export default function Dashboard() {
     
     return digestMode.charAt(0).toUpperCase() + digestMode.slice(1) + ' Brief';
   };
+
+  // Helper function to format time as MM:SS
+  const formatTime = (seconds: number): string => {
+    if (isNaN(seconds)) return '0:00';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Handle seeking in the audio
+  const handleSeek = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef || !duration) return;
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const newTime = (clickX / rect.width) * duration;
+    
+    audioRef.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  // Handle progress bar drag start
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    handleSeek(event);
+  };
+
+  // Handle progress bar drag
+  const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    handleSeek(event);
+  };
+
+  // Handle progress bar drag end
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Add global mouse event listeners for dragging
+  useEffect(() => {
+    if (isDragging) {
+      const handleGlobalMouseMove = (e: MouseEvent) => {
+        const progressBar = document.querySelector('[data-audio-progress]') as HTMLElement;
+        if (progressBar && audioRef && duration) {
+          const rect = progressBar.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          const newTime = Math.max(0, Math.min((clickX / rect.width) * duration, duration));
+          audioRef.currentTime = newTime;
+          setCurrentTime(newTime);
+        }
+      };
+
+      const handleGlobalMouseUp = () => {
+        setIsDragging(false);
+      };
+
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }
+  }, [isDragging, audioRef, duration]);
 
   useEffect(() => {
     // Set client flag after hydration to avoid mismatch
@@ -325,7 +394,8 @@ export default function Dashboard() {
 
 
 
-          {/* Main Configuration Box */}
+          {/* Main Configuration Box - Hidden when digest is generated */}
+          {!digestData && (
           <Card className="max-w-3xl mx-auto mb-8">
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-2">
@@ -485,6 +555,7 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+          )}
 
           {/* Demo Data Editor */}
           <DemoDataEditor
@@ -539,6 +610,21 @@ export default function Dashboard() {
                       onEnded={() => setIsPlaying(false)}
                       onPlay={() => setIsPlaying(true)}
                       onPause={() => setIsPlaying(false)}
+                      onTimeUpdate={() => {
+                        if (audioRef && !isDragging) {
+                          setCurrentTime(audioRef.currentTime);
+                        }
+                      }}
+                      onDurationChange={() => {
+                        if (audioRef) {
+                          setDuration(audioRef.duration);
+                        }
+                      }}
+                      onLoadedMetadata={() => {
+                        if (audioRef) {
+                          setDuration(audioRef.duration);
+                        }
+                      }}
                     />
                   )}
                   
@@ -546,10 +632,41 @@ export default function Dashboard() {
                     <Button size="sm" onClick={toggleAudio} disabled={!audioUrl}>
                       {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
-                    <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                      <div className="bg-primary h-2 rounded-full w-0"></div>
+                    
+                    {/* Interactive Audio Progress Bar */}
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono min-w-[3rem]">
+                        {formatTime(currentTime)}
+                      </span>
+                      <div 
+                        className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2 cursor-pointer relative group"
+                        data-audio-progress
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onClick={handleSeek}
+                      >
+                        {/* Progress Fill */}
+                        <div 
+                          className="bg-primary h-2 rounded-full transition-all duration-75"
+                          style={{ 
+                            width: duration > 0 ? `${(currentTime / duration) * 100}%` : '0%' 
+                          }}
+                        />
+                        
+                        {/* Scrubber Handle */}
+                        <div 
+                          className="absolute top-1/2 transform -translate-y-1/2 w-4 h-4 bg-primary rounded-full border-2 border-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing"
+                          style={{ 
+                            left: duration > 0 ? `calc(${(currentTime / duration) * 100}% - 8px)` : '-8px',
+                            pointerEvents: isDragging ? 'none' : 'auto'
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono min-w-[3rem]">
+                        {formatTime(duration)}
+                      </span>
                     </div>
-                    <span className="text-sm text-slate-600 dark:text-slate-400">~2:00</span>
                   </div>
                   
                   {/* Playback Speed Controls */}
@@ -579,22 +696,38 @@ export default function Dashboard() {
                       Copy Text
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
 
-              {/* Text Digest Display */}
-              <Card className="max-w-4xl mx-auto">
-                <CardHeader>
-                  <CardTitle>📊 Digest Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-                      {digestData.emailSummary}
-                    </pre>
+                  {/* Collapsible Script Section */}
+                  <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsScriptExpanded(!isScriptExpanded)}
+                      className="w-full justify-between text-sm font-medium p-2 hover:bg-slate-50 dark:hover:bg-slate-800"
+                    >
+                      <span className="flex items-center gap-2">
+                        📊 Digest Summary
+                      </span>
+                      {isScriptExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                    
+                    {isScriptExpanded && (
+                      <div className="mt-3 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                        <div className="prose prose-sm max-w-none dark:prose-invert">
+                          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                            {digestData.podcastScript?.replace(/\[PAUSE:(short|long)\]/g, '') || ''}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
+
+
 
               {/* Generate New Digest Button */}
               <div className="text-center">

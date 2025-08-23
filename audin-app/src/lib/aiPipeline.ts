@@ -5,7 +5,7 @@ import {
   processEmail, 
   processCalendarEventForPodcast, 
   prepareEmailsForGPT, 
-  sortEmailsByUrgency
+  sortEmailsByImportance
 } from './emailProcessor';
 import { processEmailsToJSON, generatePodcastScript, generateAudio } from './openai';
 
@@ -36,13 +36,13 @@ export async function generateDigest(
     
     console.log('🤖 GPT Call 1: Converting emails to structured JSON...');
     
-    // Step 2: GPT Call 1 - Convert emails to structured JSON with urgency scoring
+    // Step 2: GPT Call 1 - Convert emails to structured JSON with importance scoring
     const emailSummaries = await processEmailsToJSON(emailContent);
     
-    console.log(`📊 Processed ${emailSummaries.length} emails with urgency scores`);
+    console.log(`📊 Processed ${emailSummaries.length} emails with importance scores`);
     
-    // Step 3: Our code - Sort by urgency and process calendar
-    const sortedEmails = sortEmailsByUrgency(emailSummaries);
+    // Step 3: Our code - Sort by importance and process calendar
+    const sortedEmails = sortEmailsByImportance(emailSummaries);
     const calendarSummaries = calendarEvents.map(processCalendarEventForPodcast);
     
     // Step 4: Prepare calendar content for script generation
@@ -100,31 +100,44 @@ function createEnhancedTextDigest(sortedEmails: EmailSummary[], calendarSummarie
     day: 'numeric' 
   });
 
-  let digest = `# Your Daily Digest - ${today}\n\n## 📧 Emails (Sorted by Urgency)\n\n`;
+  let digest = `# Your Daily Digest - ${today}\n\n## 📧 Emails (Sorted by Importance)\n\n`;
   
-  // Group emails by urgency level for better display
-  const urgentEmails = sortedEmails.filter(e => e.urgency_score >= 7);
-  const importantEmails = sortedEmails.filter(e => e.urgency_score >= 4 && e.urgency_score < 7);
-  const generalEmails = sortedEmails.filter(e => e.urgency_score < 4);
+  // Group emails by importance level for better display
+  const urgentEmails = sortedEmails.filter(e => e.importance_score >= 7);
+  const importantEmails = sortedEmails.filter(e => e.importance_score >= 4 && e.importance_score < 7);
+  const generalEmails = sortedEmails.filter(e => e.importance_score < 4);
+
+  // Helper function to format sender information for markdown
+  const formatSenderMarkdown = (email: EmailSummary) => {
+    if (email.is_forwarded && email.original_sender) {
+      return `**${email.sender}** 🔄 *(from ${email.original_sender})*`;
+    } else if (email.is_forwarded) {
+      return `**${email.sender}** 🔄 *(forwarded)*`;
+    }
+    return `**${email.sender}**`;
+  };
 
   if (urgentEmails.length > 0) {
     digest += `### ⚡ Urgent (${urgentEmails.length})\n`;
     urgentEmails.forEach(email => {
-      digest += `**${email.sender}**: ${email.summary} *(Urgency: ${email.urgency_score}/10)*\n\n`;
+      const senderInfo = formatSenderMarkdown(email);
+      digest += `${senderInfo}: ${email.summary} *(Importance: ${email.importance_score}/10)*\n\n`;
     });
   }
 
   if (importantEmails.length > 0) {
     digest += `### 📬 Important (${importantEmails.length})\n`;
     importantEmails.forEach(email => {
-      digest += `**${email.sender}**: ${email.summary} *(Urgency: ${email.urgency_score}/10)*\n\n`;
+      const senderInfo = formatSenderMarkdown(email);
+      digest += `${senderInfo}: ${email.summary} *(Importance: ${email.importance_score}/10)*\n\n`;
     });
   }
 
   if (generalEmails.length > 0) {
     digest += `### 🧠 General (${generalEmails.length})\n`;
     generalEmails.forEach(email => {
-      digest += `**${email.sender}**: ${email.summary} *(Urgency: ${email.urgency_score}/10)*\n\n`;
+      const senderInfo = formatSenderMarkdown(email);
+      digest += `${senderInfo}: ${email.summary} *(Importance: ${email.importance_score}/10)*\n\n`;
     });
   }
 
@@ -145,10 +158,10 @@ function createEnhancedTextDigest(sortedEmails: EmailSummary[], calendarSummarie
 function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries: any[] = []): string {
   let summary = "📧 Your Day at a Glance\n\n";
   
-  // Group emails by urgency level
-  const urgentEmails = sortedEmails.filter(e => e.urgency_score >= 7);
-  const importantEmails = sortedEmails.filter(e => e.urgency_score >= 4 && e.urgency_score < 7);
-  const generalEmails = sortedEmails.filter(e => e.urgency_score < 4);
+  // Group emails by importance level
+  const urgentEmails = sortedEmails.filter(e => e.importance_score >= 7);
+  const importantEmails = sortedEmails.filter(e => e.importance_score >= 4 && e.importance_score < 7);
+  const generalEmails = sortedEmails.filter(e => e.importance_score < 4);
 
   // Helper function to get action emoji based on email content
   const getActionEmoji = (summary: string) => {
@@ -163,12 +176,23 @@ function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries:
     return '📩';
   };
 
+  // Helper function to format sender information
+  const formatSender = (email: EmailSummary) => {
+    if (email.is_forwarded && email.original_sender) {
+      return `${email.sender} 🔄 (from ${email.original_sender})`;
+    } else if (email.is_forwarded) {
+      return `${email.sender} 🔄 (forwarded)`;
+    }
+    return email.sender;
+  };
+
   // Urgent emails
   if (urgentEmails.length > 0) {
     summary += `🚨 URGENT (${urgentEmails.length})\n`;
     urgentEmails.forEach(email => {
       const emoji = getActionEmoji(email.summary);
-      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+      const senderInfo = formatSender(email);
+      summary += `• ${senderInfo}: ${email.summary} ${emoji}\n`;
     });
     summary += '\n';
   }
@@ -178,7 +202,8 @@ function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries:
     summary += `📬 IMPORTANT (${importantEmails.length})\n`;
     importantEmails.forEach(email => {
       const emoji = getActionEmoji(email.summary);
-      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+      const senderInfo = formatSender(email);
+      summary += `• ${senderInfo}: ${email.summary} ${emoji}\n`;
     });
     summary += '\n';
   }
@@ -188,7 +213,8 @@ function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries:
     summary += `🧠 GENERAL (${generalEmails.length})\n`;
     generalEmails.forEach(email => {
       const emoji = getActionEmoji(email.summary);
-      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+      const senderInfo = formatSender(email);
+      summary += `• ${senderInfo}: ${email.summary} ${emoji}\n`;
     });
     summary += '\n';
   }

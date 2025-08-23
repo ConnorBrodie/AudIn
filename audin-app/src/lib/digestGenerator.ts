@@ -1,10 +1,11 @@
 import { fetchUnreadEmails, extractEmailContent } from './gmailApi';
 import { fetchTodaysEvents, fetchEventsForDateRange } from './calendarApi';
-import { processEmail, processCalendarEventForPodcast, sortEmailsByUrgency, prepareEmailsForGPT } from './emailProcessor';
+import { processEmail, processCalendarEventForPodcast, sortEmailsByImportance, prepareEmailsForGPT } from './emailProcessor';
 import { processEmailsToJSON, generatePodcastScript } from './openai';
 import { getTTSProvider } from './ttsProviders';
 import { ProcessedDigest } from '@/types/digest';
 
+// Updated imports to use sortEmailsByImportance
 // Helper function to determine calendar date range based on mode
 function getCalendarDateRange(digestMode: 'morning' | 'evening'): { start: Date, end: Date } {
   const today = new Date();
@@ -37,7 +38,8 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string,
   script: string;
   digest: ProcessedDigest;
 }> {
-  console.log('🔐 Generating OAuth digest...');
+  const startTime = Date.now();
+  console.log(`🔐 Generating OAuth digest... [${startTime}]`);
   
   try {
     // 1. Fetch real data from APIs
@@ -75,8 +77,8 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string,
     console.log('🤖 Processing emails with GPT...');
     const emailSummaries = await processEmailsToJSON(emailContent);
     
-    // 5. Sort by urgency and prepare for script generation
-    const sortedEmails = sortEmailsByUrgency(emailSummaries);
+    // 5. Sort by importance and prepare for script generation
+    const sortedEmails = sortEmailsByImportance(emailSummaries);
     
     // Format calendar events for script generation
     const calendarContent = processedCalendarEvents.length > 0 
@@ -102,7 +104,7 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string,
       total_events: calendarEvents.length
     };
 
-    console.log('✅ OAuth digest generated successfully!');
+    console.log(`✅ OAuth digest generated successfully! [${startTime}] - Took ${Date.now() - startTime}ms`);
     
     return {
       audioBuffer,
