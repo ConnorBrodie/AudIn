@@ -25,6 +25,7 @@ export default function DemoDataEditor({
   const [isExpanded, setIsExpanded] = useState(false);
   const [emails, setEmails] = useState<Email[]>([]);
   const [calendar, setCalendar] = useState<CalendarEvent[]>([]);
+  const [editingValues, setEditingValues] = useState<{[key: string]: {hours?: string, minutes?: string}}>({});
 
   // Initialize with current data or default preset
   useEffect(() => {
@@ -108,27 +109,119 @@ export default function DemoDataEditor({
     setEmails(prev => prev.filter(email => email.id !== emailId));
   };
 
-  // Update calendar event
-  const updateCalendarEvent = (eventId: string, field: 'title' | 'time' | 'duration', value: string) => {
+  // Helper functions to get hours and minutes from calendar event
+  const getEventHours = (event: CalendarEvent): string => {
+    const dateTimeStr = event.start.dateTime || event.start.date!;
+    console.log(`🐛 getEventHours input: ${dateTimeStr}`);
+    
+    // Parse directly from ISO string to avoid timezone issues
+    const timeMatch = dateTimeStr.match(/T(\d{2}):\d{2}:/);
+    const hours = timeMatch ? timeMatch[1] : '00';
+    
+    console.log(`🐛 getEventHours output: ${hours}`);
+    return hours;
+  };
+
+  const getEventMinutes = (event: CalendarEvent): string => {
+    const dateTimeStr = event.start.dateTime || event.start.date!;
+    console.log(`🐛 getEventMinutes input: ${dateTimeStr}`);
+    
+    // Parse directly from ISO string to avoid timezone issues
+    const timeMatch = dateTimeStr.match(/T\d{2}:(\d{2}):/);
+    const minutes = timeMatch ? timeMatch[1] : '00';
+    
+    console.log(`🐛 getEventMinutes output: ${minutes}`);
+    return minutes;
+  };
+
+  // Update calendar event with temporary editing support
+  const updateCalendarEvent = (eventId: string, field: 'title' | 'hours' | 'minutes', value: string) => {
+    if (field === 'title') {
+      setCalendar(prev => prev.map(event => {
+        if (event.id !== eventId) return event;
+        return { ...event, summary: value };
+      }));
+    } else if (field === 'hours' || field === 'minutes') {
+      // Store the raw editing value temporarily
+      setEditingValues(prev => ({
+        ...prev,
+        [eventId]: {
+          ...prev[eventId],
+          [field]: value
+        }
+      }));
+    }
+  };
+
+  // Apply time changes when user finishes editing (onBlur)
+  const applyTimeChange = (eventId: string, field: 'hours' | 'minutes') => {
+    const editingValue = editingValues[eventId]?.[field];
+    if (editingValue === undefined) return;
+
+    console.log(`🐛 DEBUG: applyTimeChange for ${field}, input: "${editingValue}"`);
+
     setCalendar(prev => prev.map(event => {
       if (event.id !== eventId) return event;
       
-      if (field === 'title') {
-        return { ...event, summary: value };
-      } else if (field === 'time') {
-        // Simple time update - just change the hour
-        const currentStart = new Date(event.start.dateTime || event.start.date!);
-        const [hours, minutes] = value.split(':');
-        currentStart.setHours(parseInt(hours), parseInt(minutes));
-        const currentEnd = new Date(currentStart.getTime() + 60 * 60 * 1000); // +1 hour default
-        
-        return {
-          ...event,
-          start: { dateTime: currentStart.toISOString().slice(0, -1) + '-08:00' },
-          end: { dateTime: currentEnd.toISOString().slice(0, -1) + '-08:00' }
-        };
+      console.log(`🐛 Current event dateTime: ${event.start.dateTime}`);
+      
+      // Parse the current ISO string directly
+      const currentDateTimeStr = event.start.dateTime || '';
+      const timeMatch = currentDateTimeStr.match(/T(\d{2}):(\d{2}):/);
+      const currentHours = timeMatch ? parseInt(timeMatch[1]) : 0;
+      const currentMinutes = timeMatch ? parseInt(timeMatch[2]) : 0;
+      
+      console.log(`🐛 Parsed current hours: ${currentHours}, minutes: ${currentMinutes}`);
+      
+      let newHours = currentHours;
+      let newMinutes = currentMinutes;
+      
+      if (field === 'hours') {
+        const inputHours = parseInt(editingValue);
+        console.log(`🐛 Parsed input hours: ${inputHours}`);
+        if (!isNaN(inputHours)) {
+          newHours = Math.max(0, Math.min(23, inputHours));
+          console.log(`🐛 Validated new hours: ${newHours}`);
+        } else {
+          newHours = 0;
+        }
+      } else if (field === 'minutes') {
+        const inputMinutes = parseInt(editingValue);
+        console.log(`🐛 Parsed input minutes: ${inputMinutes}`);
+        if (!isNaN(inputMinutes)) {
+          newMinutes = Math.max(0, Math.min(59, inputMinutes));
+          console.log(`🐛 Validated new minutes: ${newMinutes}`);
+        } else {
+          newMinutes = 0;
+        }
       }
-      return event;
+      
+      // Format as ISO string directly
+      const hoursStr = newHours.toString().padStart(2, '0');
+      const minutesStr = newMinutes.toString().padStart(2, '0');
+      const startTimeStr = `2025-01-15T${hoursStr}:${minutesStr}:00-08:00`;
+      
+      console.log(`🐛 New dateTime string: ${startTimeStr}`);
+      
+      // End time is 1 hour later
+      const endHours = (newHours + 1) % 24;
+      const endHoursStr = endHours.toString().padStart(2, '0');
+      const endTimeStr = `2025-01-15T${endHoursStr}:${minutesStr}:00-08:00`;
+      
+      return {
+        ...event,
+        start: { dateTime: startTimeStr },
+        end: { dateTime: endTimeStr }
+      };
+    }));
+
+    // Clear the temporary editing value
+    setEditingValues(prev => ({
+      ...prev,
+      [eventId]: {
+        ...prev[eventId],
+        [field]: undefined
+      }
     }));
   };
 
@@ -310,18 +403,32 @@ export default function DemoDataEditor({
                             className="text-sm"
                           />
                         </div>
-                        <div>
-                          <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Time</label>
-                          <Input
-                            type="time"
-                            value={new Date(event.start.dateTime || event.start.date!).toLocaleTimeString('en-US', { 
-                              hour12: false, 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                            onChange={(e) => updateCalendarEvent(event.id, 'time', e.target.value)}
-                            className="text-sm"
-                          />
+                        <div className="flex gap-2 items-end">
+                          <div className="flex-1">
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Hours</label>
+                            <Input
+                              type="text"
+                              value={editingValues[event.id]?.hours ?? getEventHours(event)}
+                              onChange={(e) => updateCalendarEvent(event.id, 'hours', e.target.value)}
+                              onBlur={() => applyTimeChange(event.id, 'hours')}
+                              placeholder="14"
+                              className="text-sm font-mono text-center"
+                              maxLength={2}
+                            />
+                          </div>
+                          <div className="text-lg font-bold text-slate-500 pb-1">:</div>
+                          <div className="flex-1">
+                            <label className="text-xs font-medium text-slate-600 dark:text-slate-400">Minutes</label>
+                            <Input
+                              type="text"
+                              value={editingValues[event.id]?.minutes ?? getEventMinutes(event)}
+                              onChange={(e) => updateCalendarEvent(event.id, 'minutes', e.target.value)}
+                              onBlur={() => applyTimeChange(event.id, 'minutes')}
+                              placeholder="30"
+                              className="text-sm font-mono text-center"
+                              maxLength={2}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

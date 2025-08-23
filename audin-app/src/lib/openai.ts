@@ -145,6 +145,7 @@ SCRIPT REQUIREMENTS:
 - Use the word 'You' often, phrasing it like you are addressing the user directly
 - Feel free to occasionally add your own comments and thoughts about email/calendar events if anything stands out
 - Add natural pause tokens: [PAUSE:short] and [PAUSE:long]
+- If you notice that two emails are related, or an email is related to a calendar event, you can mention this in the script
 Use casual podcast language: "You've got...", "Quick heads up...", "Looking at your day...", "Moving on to...", "That’s your morning brief — you’re set to go."
 - No AM/PM - just say "two-thirty", "nine", "four forty-five"
 - Target ~300-350 words for 2-minute duration

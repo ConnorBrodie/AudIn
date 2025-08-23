@@ -58,7 +58,7 @@ export const demoPresets: DemoPreset[] = [
             { name: "Date", value: "Wed, 15 Jan 2025 07:00:00 -0800" }
           ],
           body: {
-            data: "Weekly Team Newsletter\n\nProject Updates:\n- Product launch moved to February 1st\n- New design system implementation 80% complete\n- Backend migration scheduled for next week\n\nNew Team Members:\n- Welcome Jessica Liu, Senior Designer\n- Welcome David Park, Backend Engineer\n\nUpcoming Events:\n- All-hands meeting Friday 2 PM\n- Team happy hour next Thursday"
+            data: "Weekly Team Newsletter\n\nProject Updates:\n- Product launch moved to February 1st\n- New design system implementation 80% complete\n- Backend migration scheduled for next week\n\nNew Team Members:\n- Welcome Jessica Liu, Senior Designer\n- Welcome David Park, Backend Engineer\n\nUpcoming Events:\n- All-hands meeting today 3:30 PM\n- Team retrospective tomorrow morning"
           }
         },
         internalDate: "1737815700000",
@@ -81,6 +81,15 @@ export const demoPresets: DemoPreset[] = [
         end: { dateTime: "2025-01-15T15:00:00-08:00" },
         attendees: [{ email: "mike.chen@company.com", displayName: "Mike Chen" }],
         location: "Conference Room A",
+        status: "confirmed"
+      },
+      {
+        id: "event_003",
+        summary: "All-hands Meeting",
+        start: { dateTime: "2025-01-15T15:30:00-08:00" },
+        end: { dateTime: "2025-01-15T16:30:00-08:00" },
+        attendees: [{ email: "team@company.com", displayName: "All Team" }],
+        location: "Main Conference Room",
         status: "confirmed"
       }
     ]
