@@ -7,7 +7,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mode, customData, voiceId } = body;
+    const { mode, customData, voiceId, digestMode } = body;
 
     if (mode === 'demo') {
       console.log('🎭 Generating demo digest...');
@@ -17,10 +17,10 @@ export async function POST(request: NextRequest) {
       if (customData && customData.emails && customData.calendar) {
         console.log('📝 Using custom demo data...');
         const { generateDigest } = await import('@/lib/aiPipeline');
-        result = await generateDigest(customData.emails, customData.calendar, voiceId);
+        result = await generateDigest(customData.emails, customData.calendar, voiceId, digestMode);
       } else {
         console.log('📋 Using default demo data...');
-        result = await generateDemoDigest(voiceId);
+        result = await generateDemoDigest(voiceId, digestMode);
       }
       
       // Convert audio buffer to base64 for JSON response
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
         );
       }
       
-      const result = await generateOAuthDigest(session.accessToken, voiceId);
+      const result = await generateOAuthDigest(session.accessToken, voiceId, digestMode);
       
       // Convert audio buffer to base64 for JSON response
       const audioBase64 = Buffer.from(result.audioBuffer).toString('base64');

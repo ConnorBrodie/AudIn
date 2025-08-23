@@ -23,7 +23,8 @@ export interface DigestResult {
 export async function generateDigest(
   emails: Email[], 
   calendarEvents: CalendarEvent[],
-  voiceId?: string
+  voiceId?: string,
+  digestMode: 'morning' | 'evening' = 'morning'
 ): Promise<DigestResult> {
   try {
     console.log('🚀 Starting enhanced AudIn digest generation...');
@@ -54,7 +55,7 @@ export async function generateDigest(
     console.log('🎙️ GPT Call 2: Generating podcast script...');
     
     // Step 5: GPT Call 2 - Generate podcast script from structured data
-    const podcastScript = await generatePodcastScript(sortedEmails, calendarContent);
+    const podcastScript = await generatePodcastScript(sortedEmails, calendarContent, digestMode);
     
     console.log('🔊 OpenAI TTS: Converting to audio...');
     
@@ -221,10 +222,10 @@ function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries:
 }
 
 // Helper function for demo mode
-export async function generateDemoDigest(voiceId?: string): Promise<DigestResult> {
+export async function generateDemoDigest(voiceId?: string, digestMode: 'morning' | 'evening' = 'morning'): Promise<DigestResult> {
   // Import mock data dynamically to avoid bundling issues
   const { mockEmails } = await import('@/data/mockEmails');
   const { mockCalendarEvents } = await import('@/data/mockCalendar');
   
-  return generateDigest(mockEmails, mockCalendarEvents, voiceId);
+  return generateDigest(mockEmails, mockCalendarEvents, voiceId, digestMode);
 }

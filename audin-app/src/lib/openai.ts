@@ -107,7 +107,7 @@ ${emailContent}`;
 }
 
 // GPT Call 2: Generate podcast script from structured data
-export async function generatePodcastScript(sortedEmails: EmailSummary[], calendarEvents: string): Promise<string> {
+export async function generatePodcastScript(sortedEmails: EmailSummary[], calendarEvents: string, digestMode: 'morning' | 'evening' = 'morning'): Promise<string> {
   const openai = getOpenAIClient();
 
   // Format emails by urgency for prompt
@@ -122,10 +122,63 @@ export async function generatePodcastScript(sortedEmails: EmailSummary[], calend
   console.log('=' .repeat(50));
   console.log(`📊 Total characters: ${emailsByUrgency.length}`);
 
-  const prompt = `You are an expert podcast scriptwriter who creates short, personal daily briefings, based on their unread emails and calendar events. 
-Write a natural, conversational 2-minute podcast script (about 320 ± 30 words) for a professional. 
-The script should flow smoothly when spoken aloud, using short sentences, clear transitions, and a warm, professional tone — like a friendly assistant. 
-Avoid robotic phrasing.
+  // Generate mode-specific opening and context
+  const today = new Date();
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+  const isFriday = dayOfWeek === 5;
+  const isWeekend = dayOfWeek === 6 || dayOfWeek === 0; // Saturday or Sunday
+  
+  const getModeContext = () => {
+    if (digestMode === 'morning') {
+      return {
+        opening: 'Good morning! Here\'s your inbox briefing to start the day strong...',
+        tone: 'Energetic, preparatory, action-oriented',
+        emailFraming: 'You have [number] urgent emails that need attention today',
+        calendarFraming: 'Your schedule today includes... / Your first meeting is at...',
+        closing: 'You\'ve got this! Let\'s make it a productive day.',
+        scriptType: 'energizing morning briefings based on unread emails and today\'s calendar events',
+        audience: 'a professional starting their day',
+        assistantTone: 'an enthusiastic personal assistant'
+      };
+    } else {
+      // Evening mode
+      let calendarFraming = 'Tomorrow you have...';
+      let specialInstructions = '';
+      
+      if (isFriday) {
+        calendarFraming = 'For the weekend and Monday...';
+        specialInstructions = '\nSPECIAL FRIDAY INSTRUCTIONS: Mention weekend events first, then Monday prep. Frame as "This weekend... and Monday you\'ll need to..."';
+      } else if (isWeekend) {
+        calendarFraming = 'Monday starts with...';
+        specialInstructions = '\nWEEKEND INSTRUCTIONS: Focus on Monday prep since it\'s the weekend.';
+      }
+      
+      return {
+        opening: 'Let\'s wrap up the day and prep for what\'s ahead...',
+        tone: 'Reflective, wind-down, tomorrow-prep focused',
+        emailFraming: 'You have [number] emails from today that still need responses / Here\'s what\'s still pending from today',
+        calendarFraming,
+        closing: 'That\'s your wrap-up. Rest well and you\'re all set for what\'s ahead.',
+        scriptType: 'reflective evening recaps based on unread emails from today and upcoming calendar events',
+        audience: 'a professional wrapping up their day',
+        assistantTone: 'a thoughtful personal assistant',
+        specialInstructions
+      };
+    }
+  };
+
+  const modeContext = getModeContext();
+
+  const prompt = `You are an expert podcast scriptwriter who creates ${modeContext.scriptType}. 
+Write a natural, conversational 2-minute podcast script (about 320 ± 30 words) for ${modeContext.audience}. 
+The script should flow smoothly when spoken aloud, using short sentences, clear transitions, and ${modeContext.tone.toLowerCase()} tone — like ${modeContext.assistantTone}. 
+
+STYLE GUIDE:
+- OPENING: ${modeContext.opening}
+- TONE: ${modeContext.tone}
+- EMAIL FRAMING: ${modeContext.emailFraming}
+- CALENDAR FRAMING: ${modeContext.calendarFraming}
+- CLOSING: ${modeContext.closing}${modeContext.specialInstructions || ''}
 
 EMAILS (already sorted by urgency, highest first):
 ${emailsByUrgency}

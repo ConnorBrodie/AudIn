@@ -41,7 +41,35 @@ export default function Dashboard() {
   const [isElevenLabsActive, setIsElevenLabsActive] = useState<boolean>(false);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(getDefaultVoice().id);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [digestMode, setDigestMode] = useState<'auto' | 'morning' | 'evening'>('auto');
   const router = useRouter();
+
+  // Helper function to get actual digest mode
+  const getActualDigestMode = (): 'morning' | 'evening' => {
+    if (digestMode !== 'auto') return digestMode;
+    
+    const hour = new Date().getHours();
+    return hour >= 17 ? 'evening' : 'morning'; // 5 PM cutoff
+  };
+
+  // Helper function to get mode display text
+  const getModeDisplayText = (): string => {
+    const actualMode = getActualDigestMode();
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    if (digestMode === 'auto') {
+      const dayOfWeek = new Date().getDay();
+      const isFriday = dayOfWeek === 5;
+      const isEvening = actualMode === 'evening';
+      
+      if (isFriday && isEvening) {
+        return `Auto (${currentTime} - Weekend & Monday Prep)`;
+      }
+      return `Auto (${currentTime} - ${actualMode.charAt(0).toUpperCase() + actualMode.slice(1)} mode)`;
+    }
+    
+    return digestMode.charAt(0).toUpperCase() + digestMode.slice(1) + ' Brief';
+  };
 
   useEffect(() => {
     // Check authentication status and mode
@@ -80,7 +108,8 @@ export default function Dashboard() {
         body: JSON.stringify({
           mode: isDemo ? 'demo' : 'oauth',
           customData: customDemoData,
-          voiceId: isElevenLabsActive ? selectedVoiceId : undefined
+          voiceId: isElevenLabsActive ? selectedVoiceId : undefined,
+          digestMode: getActualDigestMode()
         }),
       });
 
@@ -274,6 +303,57 @@ export default function Dashboard() {
               }
             </p>
           </div>
+
+          {/* Mode Selector */}
+          <Card className="max-w-4xl mx-auto mb-6">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-lg">📅 Digest Mode</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(['auto', 'morning', 'evening'] as const).map((mode) => (
+                    <label
+                      key={mode}
+                      className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all duration-200 hover:shadow-md ${
+                        digestMode === mode
+                          ? 'border-primary bg-primary/5 shadow-sm'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="digestMode"
+                        value={mode}
+                        checked={digestMode === mode}
+                        onChange={(e) => setDigestMode(e.target.value as 'auto' | 'morning' | 'evening')}
+                        className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-slate-900 dark:text-slate-100">
+                          {mode === 'auto' && '🤖 Auto'}
+                          {mode === 'morning' && '🌅 Morning Brief'}
+                          {mode === 'evening' && '🌙 Evening Recap'}
+                        </div>
+                        <div className="text-sm text-slate-600 dark:text-slate-400">
+                          {mode === 'auto' && 'Detects time of day automatically'}
+                          {mode === 'morning' && 'Today\'s urgent items & schedule'}
+                          {mode === 'evening' && 'Pending items & tomorrow prep'}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                
+                {/* Current mode indicator */}
+                <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                  <div className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Current mode: <span className="text-primary">{getModeDisplayText()}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Demo Preset Selector */}
           {isDemo && (

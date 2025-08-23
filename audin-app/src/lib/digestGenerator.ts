@@ -1,12 +1,38 @@
 import { fetchUnreadEmails, extractEmailContent } from './gmailApi';
-import { fetchTodaysEvents } from './calendarApi';
+import { fetchTodaysEvents, fetchEventsForDateRange } from './calendarApi';
 import { processEmail, processCalendarEventForPodcast, sortEmailsByUrgency, prepareEmailsForGPT } from './emailProcessor';
 import { processEmailsToJSON, generatePodcastScript } from './openai';
 import { getTTSProvider } from './ttsProviders';
 import { ProcessedDigest } from '@/types/digest';
 
+// Helper function to determine calendar date range based on mode
+function getCalendarDateRange(digestMode: 'morning' | 'evening'): { start: Date, end: Date } {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  
+  if (digestMode === 'evening') {
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 5 = Friday
+    
+    if (dayOfWeek === 5) { // Friday evening - include weekend + Monday
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + 3); // Friday + 3 = Monday
+      return { start: tomorrow, end: monday }; // Sat, Sun, Mon
+    } else if (dayOfWeek === 6 || dayOfWeek === 0) { // Weekend evening - prep for Monday
+      const monday = new Date(today);
+      const daysToMonday = dayOfWeek === 6 ? 2 : 1; // Saturday = 2 days, Sunday = 1 day
+      monday.setDate(today.getDate() + daysToMonday);
+      return { start: monday, end: monday }; // Just Monday
+    }
+    
+    return { start: tomorrow, end: tomorrow }; // Just tomorrow for regular weekdays
+  }
+  
+  return { start: today, end: today }; // Just today for morning
+}
+
 // Generate digest from real Gmail and Calendar data
-export async function generateOAuthDigest(accessToken: string, voiceId?: string): Promise<{
+export async function generateOAuthDigest(accessToken: string, voiceId?: string, digestMode: 'morning' | 'evening' = 'morning'): Promise<{
   audioBuffer: ArrayBuffer;
   script: string;
   digest: ProcessedDigest;
@@ -16,9 +42,13 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string)
   try {
     // 1. Fetch real data from APIs
     console.log('📡 Fetching data from Gmail and Calendar...');
+    
+    // Get appropriate calendar date range based on digest mode
+    const { start: calendarStart, end: calendarEnd } = getCalendarDateRange(digestMode);
+    
     const [emails, calendarEvents] = await Promise.all([
       fetchUnreadEmails(accessToken, 8), // Fetch up to 8 unread emails from Primary tab, last 3 days
-      fetchTodaysEvents(accessToken)
+      fetchEventsForDateRange(accessToken, calendarStart, calendarEnd)
     ]);
 
     console.log(`📧 Found ${emails.length} unread emails`);
@@ -57,7 +87,7 @@ export async function generateOAuthDigest(accessToken: string, voiceId?: string)
 
     // 6. GPT Call 2: Generate podcast script
     console.log('🎙️ Generating podcast script...');
-    const script = await generatePodcastScript(sortedEmails, calendarContent);
+    const script = await generatePodcastScript(sortedEmails, calendarContent, digestMode);
     
     // 7. Generate audio with TTS
     console.log('🔊 Converting script to audio...');
