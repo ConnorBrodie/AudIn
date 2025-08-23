@@ -70,7 +70,7 @@ export async function generateDigest(
     };
     
     const textDigest = createEnhancedTextDigest(sortedEmails, calendarSummaries);
-    const emailSummary = formatEmailsForDisplay(sortedEmails);
+    const emailSummary = formatEmailsForDisplay(sortedEmails, calendarSummaries);
     
     console.log('✅ Enhanced digest generation complete!');
     
@@ -140,11 +140,84 @@ function createEnhancedTextDigest(sortedEmails: EmailSummary[], calendarSummarie
   return digest;
 }
 
-// Format emails for display in dashboard
-function formatEmailsForDisplay(sortedEmails: EmailSummary[]): string {
-  return sortedEmails.map(email => 
-    `${email.sender}: ${email.summary} (Urgency: ${email.urgency_score}/10)`
-  ).join('\n');
+// Format emails for display in dashboard with visual enhancements
+function formatEmailsForDisplay(sortedEmails: EmailSummary[], calendarSummaries: any[] = []): string {
+  let summary = "📧 Your Day at a Glance\n\n";
+  
+  // Group emails by urgency level
+  const urgentEmails = sortedEmails.filter(e => e.urgency_score >= 7);
+  const importantEmails = sortedEmails.filter(e => e.urgency_score >= 4 && e.urgency_score < 7);
+  const generalEmails = sortedEmails.filter(e => e.urgency_score < 4);
+
+  // Helper function to get action emoji based on email content
+  const getActionEmoji = (summary: string) => {
+    const lower = summary.toLowerCase();
+    if (lower.includes('meeting') || lower.includes('call')) return '👥';
+    if (lower.includes('budget') || lower.includes('money') || lower.includes('$')) return '💰';
+    if (lower.includes('deadline') || lower.includes('urgent') || lower.includes('asap')) return '⏰';
+    if (lower.includes('approval') || lower.includes('sign')) return '✅';
+    if (lower.includes('report') || lower.includes('document')) return '📄';
+    if (lower.includes('project') || lower.includes('task')) return '🎯';
+    if (lower.includes('issue') || lower.includes('problem') || lower.includes('error')) return '🔥';
+    return '📩';
+  };
+
+  // Urgent emails
+  if (urgentEmails.length > 0) {
+    summary += `🚨 URGENT (${urgentEmails.length})\n`;
+    urgentEmails.forEach(email => {
+      const emoji = getActionEmoji(email.summary);
+      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+    });
+    summary += '\n';
+  }
+
+  // Important emails  
+  if (importantEmails.length > 0) {
+    summary += `📬 IMPORTANT (${importantEmails.length})\n`;
+    importantEmails.forEach(email => {
+      const emoji = getActionEmoji(email.summary);
+      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+    });
+    summary += '\n';
+  }
+
+  // General emails
+  if (generalEmails.length > 0) {
+    summary += `🧠 GENERAL (${generalEmails.length})\n`;
+    generalEmails.forEach(email => {
+      const emoji = getActionEmoji(email.summary);
+      summary += `• ${email.sender}: ${email.summary} ${emoji}\n`;
+    });
+    summary += '\n';
+  }
+
+  // Calendar events
+  if (calendarSummaries.length > 0) {
+    summary += `📅 TODAY'S SCHEDULE (${calendarSummaries.length})\n`;
+    calendarSummaries.forEach(event => {
+      // Get time-based emoji
+      const hour = parseInt(event.time.split(':')[0]);
+      let timeEmoji = '🕐';
+      if (hour >= 6 && hour < 12) timeEmoji = '🌅';
+      else if (hour >= 12 && hour < 18) timeEmoji = '☀️';
+      else if (hour >= 18 && hour < 22) timeEmoji = '🌇';
+      else timeEmoji = '🌙';
+      
+      // Get event type emoji
+      const eventLower = event.title.toLowerCase();
+      let eventEmoji = '📅';
+      if (eventLower.includes('meeting') || eventLower.includes('call')) eventEmoji = '👥';
+      else if (eventLower.includes('lunch') || eventLower.includes('coffee')) eventEmoji = '☕';
+      else if (eventLower.includes('presentation')) eventEmoji = '🎯';
+      else if (eventLower.includes('interview')) eventEmoji = '💼';
+      else if (eventLower.includes('review')) eventEmoji = '📊';
+      
+      summary += `• ${event.time} - ${event.title} ${timeEmoji}${eventEmoji}\n`;
+    });
+  }
+
+  return summary;
 }
 
 // Helper function for demo mode

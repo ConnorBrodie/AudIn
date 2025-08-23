@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [ttsProvider, setTtsProvider] = useState<string>("Loading...");
   const [isElevenLabsActive, setIsElevenLabsActive] = useState<boolean>(false);
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(getDefaultVoice().id);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const router = useRouter();
 
   useEffect(() => {
@@ -57,6 +58,13 @@ export default function Dashboard() {
       router.push("/");
     }
   }, [session, status, router]);
+
+  // Apply playback speed when audio element is ready
+  useEffect(() => {
+    if (audioRef) {
+      audioRef.playbackRate = playbackSpeed;
+    }
+  }, [audioRef, playbackSpeed]);
 
   const handleGenerateDigest = async () => {
     setIsGenerating(true);
@@ -109,6 +117,13 @@ export default function Dashboard() {
       audioRef.play();
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const changePlaybackSpeed = (speed: number) => {
+    setPlaybackSpeed(speed);
+    if (audioRef) {
+      audioRef.playbackRate = speed;
+    }
   };
 
   const downloadAudio = () => {
@@ -402,6 +417,23 @@ export default function Dashboard() {
                     <span className="text-sm text-slate-600 dark:text-slate-400">~2:00</span>
                   </div>
                   
+                  {/* Playback Speed Controls */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-slate-600 dark:text-slate-400 font-medium">Speed:</span>
+                    {[0.5, 1, 1.5, 2].map((speed) => (
+                      <Button
+                        key={speed}
+                        size="sm"
+                        variant={playbackSpeed === speed ? "default" : "outline"}
+                        onClick={() => changePlaybackSpeed(speed)}
+                        disabled={!audioUrl}
+                        className="min-w-[3rem]"
+                      >
+                        {speed}x
+                      </Button>
+                    ))}
+                  </div>
+                  
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={downloadAudio} disabled={!audioUrl}>
                       <Download className="h-4 w-4 mr-1" />
@@ -418,7 +450,7 @@ export default function Dashboard() {
               {/* Text Digest Display */}
               <Card className="max-w-4xl mx-auto">
                 <CardHeader>
-                  <CardTitle>📧 Email Summary</CardTitle>
+                  <CardTitle>📊 Digest Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -436,6 +468,7 @@ export default function Dashboard() {
                     setAudioReady(false);
                     setDigestData(null);
                     setError(null);
+                    setPlaybackSpeed(1); // Reset speed to normal
                     if (audioUrl) {
                       URL.revokeObjectURL(audioUrl);
                       setAudioUrl(null);
