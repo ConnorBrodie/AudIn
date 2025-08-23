@@ -86,6 +86,66 @@ export const demoPresets: DemoPreset[] = [
     ]
   },
   {
+    name: "Light Day",
+    description: "Calm day with routine updates and light schedule",
+    emails: [
+      {
+        id: "email_light_001",
+        threadId: "thread_light_001",
+        snippet: "Monthly team social event planning...",
+        payload: {
+          headers: [
+            { name: "From", value: "HR Team <hr@company.com>" },
+            { name: "Subject", value: "February Team Social Planning" },
+            { name: "Date", value: "Wed, 15 Jan 2025 11:00:00 -0800" }
+          ],
+          body: {
+            data: "Hi everyone!\n\nWe're planning our February team social event. Please share your preferences:\n\n• Bowling night\n• Escape room adventure\n• Cooking class\n• Mini golf tournament\n\nVoting deadline: January 25th\nEvent date: February 15th\n\nLooking forward to a fun team building experience!\n\nCheers,\nHR Team"
+          }
+        },
+        internalDate: "1737829200000",
+        labelIds: ["UNREAD", "INBOX"]
+      },
+      {
+        id: "email_light_002",
+        threadId: "thread_light_002",
+        snippet: "Weekly design inspiration newsletter...",
+        payload: {
+          headers: [
+            { name: "From", value: "Design Weekly <newsletter@designweekly.com>" },
+            { name: "Subject", value: "Design Trends: Minimalism is Back" },
+            { name: "Date", value: "Wed, 15 Jan 2025 07:30:00 -0800" }
+          ],
+          body: {
+            data: "This Week in Design\n\n🎨 Trending: Clean, minimalist interfaces are making a comeback\n📱 Mobile-first design principles\n🌈 Color palettes inspired by nature\n✨ Micro-animations for better UX\n\nFeatured article: \"The Psychology of White Space\"\n\nHappy designing!\nThe Design Weekly Team"
+          }
+        },
+        internalDate: "1737817800000",
+        labelIds: ["UNREAD", "INBOX"]
+      }
+    ],
+    calendar: [
+      {
+        id: "event_light_001",
+        summary: "Coffee Chat with Emma",
+        start: { dateTime: "2025-01-15T10:00:00-08:00" },
+        end: { dateTime: "2025-01-15T10:30:00-08:00" },
+        attendees: [{ email: "emma@company.com", displayName: "Emma Smith" }],
+        location: "Office Café",
+        status: "confirmed"
+      },
+      {
+        id: "event_light_002",
+        summary: "Optional: Design Review Session",
+        start: { dateTime: "2025-01-15T15:00:00-08:00" },
+        end: { dateTime: "2025-01-15T16:00:00-08:00" },
+        attendees: [{ email: "design@company.com", displayName: "Design Team" }],
+        location: "Design Studio",
+        status: "tentative"
+      }
+    ]
+  },
+  {
     name: "Busy Day",
     description: "High-urgency day with multiple deadlines and meetings",
     emails: [
@@ -177,66 +237,6 @@ export const demoPresets: DemoPreset[] = [
         attendees: [{ email: "board@company.com", displayName: "Board of Directors" }],
         location: "Boardroom",
         status: "confirmed"
-      }
-    ]
-  },
-  {
-    name: "Light Day",
-    description: "Calm day with routine updates and light schedule",
-    emails: [
-      {
-        id: "email_light_001",
-        threadId: "thread_light_001",
-        snippet: "Monthly team social event planning...",
-        payload: {
-          headers: [
-            { name: "From", value: "HR Team <hr@company.com>" },
-            { name: "Subject", value: "February Team Social Planning" },
-            { name: "Date", value: "Wed, 15 Jan 2025 11:00:00 -0800" }
-          ],
-          body: {
-            data: "Hi everyone!\n\nWe're planning our February team social event. Please share your preferences:\n\n• Bowling night\n• Escape room adventure\n• Cooking class\n• Mini golf tournament\n\nVoting deadline: January 25th\nEvent date: February 15th\n\nLooking forward to a fun team building experience!\n\nCheers,\nHR Team"
-          }
-        },
-        internalDate: "1737829200000",
-        labelIds: ["UNREAD", "INBOX"]
-      },
-      {
-        id: "email_light_002",
-        threadId: "thread_light_002",
-        snippet: "Weekly design inspiration newsletter...",
-        payload: {
-          headers: [
-            { name: "From", value: "Design Weekly <newsletter@designweekly.com>" },
-            { name: "Subject", value: "Design Trends: Minimalism is Back" },
-            { name: "Date", value: "Wed, 15 Jan 2025 07:30:00 -0800" }
-          ],
-          body: {
-            data: "This Week in Design\n\n🎨 Trending: Clean, minimalist interfaces are making a comeback\n📱 Mobile-first design principles\n🌈 Color palettes inspired by nature\n✨ Micro-animations for better UX\n\nFeatured article: \"The Psychology of White Space\"\n\nHappy designing!\nThe Design Weekly Team"
-          }
-        },
-        internalDate: "1737817800000",
-        labelIds: ["UNREAD", "INBOX"]
-      }
-    ],
-    calendar: [
-      {
-        id: "event_light_001",
-        summary: "Coffee Chat with Emma",
-        start: { dateTime: "2025-01-15T10:00:00-08:00" },
-        end: { dateTime: "2025-01-15T10:30:00-08:00" },
-        attendees: [{ email: "emma@company.com", displayName: "Emma Smith" }],
-        location: "Office Café",
-        status: "confirmed"
-      },
-      {
-        id: "event_light_002",
-        summary: "Optional: Design Review Session",
-        start: { dateTime: "2025-01-15T15:00:00-08:00" },
-        end: { dateTime: "2025-01-15T16:00:00-08:00" },
-        attendees: [{ email: "design@company.com", displayName: "Design Team" }],
-        location: "Design Studio",
-        status: "tentative"
       }
     ]
   },
