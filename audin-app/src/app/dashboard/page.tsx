@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [selectedVoiceId, setSelectedVoiceId] = useState<string>(getDefaultVoice().id);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [digestMode, setDigestMode] = useState<'auto' | 'morning' | 'evening'>('auto');
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   // Helper function to get actual digest mode
@@ -55,21 +56,35 @@ export default function Dashboard() {
   // Helper function to get mode display text
   const getModeDisplayText = (): string => {
     const actualMode = getActualDigestMode();
-    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
     if (digestMode === 'auto') {
       const dayOfWeek = new Date().getDay();
       const isFriday = dayOfWeek === 5;
       const isEvening = actualMode === 'evening';
       
+      // Only show time on client side to avoid hydration mismatch
+      const timeDisplay = isClient ? (() => {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const formattedHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+        const period = hours >= 12 ? 'PM' : 'AM';
+        return `${formattedHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period} - `;
+      })() : '';
+      
       if (isFriday && isEvening) {
-        return `Auto (${currentTime} - Weekend & Monday Prep)`;
+        return `Auto (${timeDisplay}Weekend & Monday Prep)`;
       }
-      return `Auto (${currentTime} - ${actualMode.charAt(0).toUpperCase() + actualMode.slice(1)} mode)`;
+      return `Auto (${timeDisplay}${actualMode.charAt(0).toUpperCase() + actualMode.slice(1)} mode)`;
     }
     
     return digestMode.charAt(0).toUpperCase() + digestMode.slice(1) + ' Brief';
   };
+
+  useEffect(() => {
+    // Set client flag after hydration to avoid mismatch
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     // Check authentication status and mode
