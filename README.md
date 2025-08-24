@@ -270,5 +270,4 @@ MIT License - see [LICENSE](./LICENSE) for details.
 
 **🎧 AudIn - Transforming Email Overload into Audio Clarity**
 
-*Built for the Employment Hero AI Hackathon 2024*  
-*Made with ❤️ for busy professionals who deserve better than inbox overwhelm.*
+*Built for the Employment Hero AI Hackathon 2025*  
