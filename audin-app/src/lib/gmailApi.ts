@@ -126,7 +126,7 @@ export function extractEmailContent(email: Email): string {
   }
   
   console.log(`📧 FINAL RAW CONTENT LENGTH: ${content.length} chars`);
-  console.log(`📧 FINAL RAW CONTENT PREVIEW: "${content.substring(0, 500)}"`);
+  // Content preview removed for security
   
   // Clean up the content for GPT processing
   return cleanEmailContent(content);
@@ -189,7 +189,7 @@ function cleanEmailContent(content: string): string {
   
   console.log('🔍 EMAIL CONTENT EXTRACTION DEBUG:');
   console.log(`Raw content length: ${content.length}`);
-  console.log(`Raw content preview: "${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"`);
+  // Content preview removed for security
   
   // Skip extremely long emails (likely newsletters/spam) - take first part only
   if (content.length > 5000) {
@@ -202,7 +202,7 @@ function cleanEmailContent(content: string): string {
   // NO PROCESSING AT ALL - completely raw content
   
   console.log(`Cleaned content length: ${cleaned.length}`);
-  console.log(`Cleaned content: "${cleaned.substring(0, 300)}${cleaned.length > 300 ? '...' : ''}"`);
+  // Content preview removed for security
   
   // Apply simple character limit - no complex truncation logic
   const targetLimit = 1200; // Increased from 800 to allow more content
@@ -210,7 +210,7 @@ function cleanEmailContent(content: string): string {
     cleaned = cleaned.substring(0, targetLimit);
   }
   
-  console.log(`Final content (after limit): "${cleaned.substring(0, 200)}${cleaned.length > 200 ? '...' : ''}"`);
+  console.log(`Final content length: ${cleaned.length} chars`);
   console.log('---');
   
   return cleaned;

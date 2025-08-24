@@ -273,32 +273,31 @@ export default function DemoDataEditor({
   };
 
   return (
-    <div className="max-w-4xl mx-auto mb-8">
+    <div className="mt-4">
       {/* Expandable Header */}
-      <Card className="border-dashed border-blue-200 dark:border-blue-800">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg flex items-center gap-2">
-                ✏️ Custom Editor
-              </CardTitle>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Fine-tune your selected scenario or create custom content
-              </p>
+      <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-sm font-medium text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              ✏️ Custom Editor
             </div>
-            <Button 
-              variant="ghost" 
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-2"
-            >
-              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              {isExpanded ? 'Close Editor' : 'Edit Data'}
-            </Button>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              Fine-tune your selected scenario or create custom content
+            </p>
           </div>
-        </CardHeader>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 text-xs"
+          >
+            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {isExpanded ? 'Close Editor' : 'Edit Data'}
+          </Button>
+        </div>
 
         {isExpanded && (
-          <CardContent className="space-y-6">
+          <div className="space-y-6 mt-4">
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 💡 <strong>Tip:</strong> Use the preset selector above to quickly switch scenarios, then edit details here if needed. 
@@ -447,9 +446,9 @@ export default function DemoDataEditor({
                 Reset to Default
               </Button>
             </div>
-          </CardContent>
+          </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

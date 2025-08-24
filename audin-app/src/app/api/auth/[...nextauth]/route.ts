@@ -3,6 +3,9 @@ import GoogleProvider from 'next-auth/providers/google'
 import { AuthOptions } from 'next-auth'
 
 export const authOptions: AuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || (() => {
+    throw new Error('NEXTAUTH_SECRET is required for secure authentication');
+  })(),
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -30,8 +33,8 @@ export const authOptions: AuthOptions = {
       return token
     },
     async session({ session, token }) {
-      // Send properties to the client
-      session.accessToken = token.accessToken as string
+      // Don't send accessToken to client for security
+      // Access token is kept server-side only via getServerSession
       return session
     },
   },

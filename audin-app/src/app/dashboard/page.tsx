@@ -527,6 +527,14 @@ export default function Dashboard() {
                       Selected: <span className="font-medium">{selectedPreset}</span> • {customDemoData.emails.length} emails, {customDemoData.calendar.length} events
                     </div>
                   )}
+                  
+                  {/* Integrated Demo Data Editor */}
+                  <DemoDataEditor
+                    isDemo={isDemo}
+                    onDataChange={handleDemoDataChange}
+                    currentEmails={customDemoData?.emails || []}
+                    currentCalendar={customDemoData?.calendar || []}
+                  />
                 </div>
               )}
 
@@ -556,15 +564,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
           )}
-
-          {/* Demo Data Editor */}
-          <DemoDataEditor
-            isDemo={isDemo}
-            onDataChange={handleDemoDataChange}
-            currentEmails={customDemoData?.emails || []}
-            currentCalendar={customDemoData?.calendar || []}
-          />
-
 
           {/* Loading State */}
           {isGenerating && (

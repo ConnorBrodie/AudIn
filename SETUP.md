@@ -45,7 +45,7 @@ Your `.env` file should contain (enter the relevant keys):
 # Necessary API Key
 OPENAI_API_KEY=
 
-# Development settings
+# Development settings, leave this
 NODE_ENV=development
 
 # Only needed for premium TTS AI, otherwise will use the GPT TTS API.

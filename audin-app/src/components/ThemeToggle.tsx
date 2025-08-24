@@ -3,11 +3,17 @@
 import { Moon, Sun, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/ThemeProvider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const themes = [
     { value: "light", label: "Light", icon: Sun },
@@ -17,6 +23,21 @@ export function ThemeToggle() {
 
   const currentTheme = themes.find(t => t.value === theme) || themes[2];
   const CurrentIcon = currentTheme.icon;
+
+  // Return a placeholder during SSR to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-9 w-9 p-0"
+        disabled
+      >
+        <Monitor className="h-4 w-4" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
 
   return (
     <div className="relative">
