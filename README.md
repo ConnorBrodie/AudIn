@@ -258,10 +258,6 @@ AudIn is designed with privacy as a core principle:
 - Graceful error handling for missing environment variables
 - Secure OAuth implementation with session management
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
-
 ## 📄 License
 
 MIT License - see [LICENSE](./LICENSE) for details.
