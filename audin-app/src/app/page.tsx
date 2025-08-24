@@ -24,7 +24,13 @@ export default function Home() {
   const handleOAuthSignIn = () => {
     // Clear demo mode flag and initiate OAuth sign-in
     sessionStorage.removeItem("audin-demo-mode");
-    signIn('google', { callbackUrl: '/dashboard' });
+    // Only attempt sign-in if OAuth is properly configured
+    if (oauthStatus?.oauthEnabled) {
+      signIn('google', { callbackUrl: '/dashboard' });
+    } else {
+      console.warn('OAuth not configured, falling back to demo mode');
+      handleDemoMode();
+    }
   };
 
   const handleDemoMode = () => {

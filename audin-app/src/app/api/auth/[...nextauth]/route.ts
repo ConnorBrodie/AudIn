@@ -28,6 +28,14 @@ export const authOptions: AuthOptions = {
       }
     })
   ] : [], // Empty providers array if OAuth not configured
+  // Disable NextAuth when no providers are configured
+  ...(hasOAuthConfig ? {} : {
+    session: { strategy: 'jwt' },
+    pages: {
+      signIn: '/',
+      error: '/',
+    }
+  }),
   callbacks: {
     async jwt({ token, account }) {
       // Persist the OAuth access_token to the token right after signin
@@ -49,6 +57,17 @@ export const authOptions: AuthOptions = {
   }
 }
 
-const handler = NextAuth(authOptions)
+// Create handler with error handling for when OAuth is not configured
+const handler = hasOAuthConfig 
+  ? NextAuth(authOptions)
+  : NextAuth({
+      ...authOptions,
+      // Minimal configuration for demo mode
+      callbacks: {
+        async signIn() {
+          return false; // Prevent sign-in when OAuth not configured
+        }
+      }
+    });
 
 export { handler as GET, handler as POST, hasOAuthConfig }

@@ -8,7 +8,10 @@ export default function SessionProvider({
   children: React.ReactNode;
 }) {
   return (
-    <NextAuthSessionProvider>
+    <NextAuthSessionProvider
+      // Provide a base URL to prevent Invalid URL errors
+      basePath="/api/auth"
+    >
       {children}
     </NextAuthSessionProvider>
   );
