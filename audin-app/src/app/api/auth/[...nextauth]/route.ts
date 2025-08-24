@@ -2,11 +2,16 @@ import NextAuth from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { AuthOptions } from 'next-auth'
 
+// Check if OAuth is properly configured
+const hasOAuthConfig = !!(
+  process.env.NEXTAUTH_SECRET && 
+  process.env.GOOGLE_CLIENT_ID && 
+  process.env.GOOGLE_CLIENT_SECRET
+);
+
 export const authOptions: AuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || (() => {
-    throw new Error('NEXTAUTH_SECRET is required for secure authentication');
-  })(),
-  providers: [
+  secret: process.env.NEXTAUTH_SECRET || 'demo-fallback-secret-not-for-production',
+  providers: hasOAuthConfig ? [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -22,7 +27,7 @@ export const authOptions: AuthOptions = {
         }
       }
     })
-  ],
+  ] : [], // Empty providers array if OAuth not configured
   callbacks: {
     async jwt({ token, account }) {
       // Persist the OAuth access_token to the token right after signin
@@ -46,4 +51,4 @@ export const authOptions: AuthOptions = {
 
 const handler = NextAuth(authOptions)
 
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST, hasOAuthConfig }

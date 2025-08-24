@@ -61,7 +61,9 @@ NEXTAUTH_SECRET=
 
 **⚠️ Important**: Never commit `.env` to version control! It's already in `.gitignore`.
 
-**⚠️ Important**: This section is ONLY for USER AUTHENTICATION, NOT necessary for the DEMO.
+**✅ Demo Mode**: If you only want to try the demo mode, you can skip the OAuth setup entirely. Just provide `OPENAI_API_KEY` and the app will work in demo-only mode.
+
+**⚠️ OAuth Setup**: This section is ONLY needed for user authentication with real Gmail/Calendar data.
 
 ## 🌩️ Step 3: Google Cloud Console Setup
 
